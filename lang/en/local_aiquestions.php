@@ -51,7 +51,7 @@ $string['presets'] = 'Presets';
 $string['presetsdesc'] = 'You can specify up to 10 presets, which users will be able to select in their courses. Users will still be able to edit the presets before sending them to OpenAI.';
 $string['preset'] = 'Preset';
 $string['shareyourprompts'] = 'You can find more prompt ideas or share yours at <a target="_blank" href="https://docs.moodle.org/402/en/AI_Text_to_questions_generator">the Moodle Docs page for this plugin</a>.';
-
+$string['focus'] = 'write a focus text to focus the question result';
 // Story form.
 $string['category'] = 'Question category';
 $string['category_help'] = 'If the category selection is empty, open the question bank for this course once.';

@@ -33,13 +33,15 @@ defined('MOODLE_INTERNAL') || die();
  * @package     local_aiquestions
  * @category    admin
  */
-class questions extends \core\task\adhoc_task {
+class questions extends \core\task\adhoc_task
+{
     /**
      * Execute the task.
      *
      * @return void
      */
-    public function execute() {
+    public function execute()
+    {
         global $DB, $CFG;
         require_once(__DIR__ . '/../../locallib.php');
         // Read numoftries from settings.

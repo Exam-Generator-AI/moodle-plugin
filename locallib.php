@@ -30,7 +30,8 @@
  * @param object data data to create questions from
  * @return object questions of generated questions
  */
-function local_aiquestions_get_questions($data) {
+function local_aiquestions_get_questions($data)
+{
 
     global $CFG;
 
@@ -61,7 +62,7 @@ function local_aiquestions_get_questions($data) {
             ]}';
 
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json' , $authorization ));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -71,8 +72,8 @@ function local_aiquestions_get_questions($data) {
     curl_close($ch);
 
     $questions = new stdClass(); // The questions object.
-    if (isset($result->choices[0]->message->content)) {
-        $questions->text = $result->choices[0]->message->content;
+    if (isset($result->gift)) { //TODO: return from exam server 
+        $questions->text = $result->gift;
         $questions->prompt = $story;
     } else {
         $questions = $result;
@@ -90,7 +91,8 @@ function local_aiquestions_get_questions($data) {
  * @param int $userid user id
  * @return array of objects of created questions
  */
-function local_aiquestions_create_questions($courseid, $category, $gift, $numofquestions, $userid) {
+function local_aiquestions_create_questions($courseid, $category, $gift, $numofquestions, $userid)
+{
     global $CFG, $USER, $DB;
 
     require_once($CFG->libdir . '/questionlib.php');
@@ -103,7 +105,7 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
 
     // Get question category TODO: there is probably a better way to do this.
     if ($category) {
-        $categoryids = explode(',',$category);
+        $categoryids = explode(',', $category);
         $categoryid = $categoryids[0];
         $categorycontextid = $categoryids[1];
         $category = $DB->get_record('question_categories', ['id' => $categoryid, 'contextid' => $categorycontextid]);
@@ -161,7 +163,8 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
  * @param string $value json to escape
  * @return string result escaped json
  */
-function local_aiquestions_escape_json($value) {
+function local_aiquestions_escape_json($value)
+{
     $escapers = array("\\", "/", "\"", "\n", "\r", "\t", "\x08", "\x0c");
     $replacements = array("\\\\", "\\/", "\\\"", "\\n", "\\r", "\\t", "\\f", "\\b");
     $result = str_replace($escapers, $replacements, $value);
@@ -174,7 +177,8 @@ function local_aiquestions_escape_json($value) {
  * @param string $gift questions in GIFT format
  * @return bool true if valid, false if not
  */
-function local_aiquestions_check_gift($gift) {
+function local_aiquestions_check_gift($gift)
+{
     $questions = explode("\n\n", $gift);
 
     foreach ($questions as $question) {
@@ -205,4 +209,3 @@ function local_aiquestions_check_gift($gift) {
     }
     return true;
 }
-

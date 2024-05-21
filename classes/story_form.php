@@ -32,30 +32,54 @@ require_once($CFG->libdir . '/formslib.php');
  * @package     local_aiquestions
  * @category    admin
  */
-class local_aiquestions_story_form extends moodleform {
+class local_aiquestions_story_form extends moodleform
+{
     /**
      * Defines forms elements
      */
-    public function definition() {
+    public function definition()
+    {
         global $courseid;
         $mform = $this->_form;
 
         // Question category.
         $contexts = [context_course::instance($courseid)];
-        $mform->addElement('questioncategory', 'category', get_string('category', 'question'),
-            array('contexts'=>$contexts));
+        $mform->addElement(
+            'questioncategory',
+            'category',
+            get_string('category', 'question'),
+            array('contexts' => $contexts)
+        );
         $mform->addHelpButton('category', 'category', 'local_aiquestions');
+
 
         // Number of questions.
         $defaultnumofquestions = 4;
-        $select = $mform->addElement('select', 'numofquestions', get_string('numofquestions', 'local_aiquestions'),
-            array('1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9, '10' => 10));
+        $select = $mform->addElement(
+            'select',
+            'numofquestions',
+            get_string('numofquestions', 'local_aiquestions'),
+            array('1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9, '10' => 10)
+        );
         $select->setSelected($defaultnumofquestions);
         $mform->setType('numofquestions', PARAM_INT);
 
+        // Number of questions.
+        $select = $mform->addElement(
+            'textarea',
+            'focus',
+            get_string('focus', 'local_aiquestions'),
+            'wrap="virtual" rows="10" cols="50"'
+        );
+        $mform->setType('numofquestions', PARAM_RAW);
+
         // Story.
-        $mform->addElement('textarea', 'story', get_string('story', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="50"'); // This model's maximum context length is 4097 tokens. We limit the story to 4096 tokens.
+        $mform->addElement(
+            'textarea',
+            'story',
+            get_string('story', 'local_aiquestions'),
+            'wrap="virtual" rows="10" cols="50"'
+        ); // This model's maximum context length is 4097 tokens. We limit the story to 4096 tokens.
         $mform->setType('story', PARAM_RAW);
         $mform->addHelpButton('story', 'story', 'local_aiquestions');
 
@@ -78,8 +102,12 @@ class local_aiquestions_story_form extends moodleform {
             $primer = $i + 1;
 
             // Primer.
-            $mform->addElement('textarea', 'primer' . $i, get_string('primer', 'local_aiquestions'),
-                'wrap="virtual" rows="10" cols="50"');
+            $mform->addElement(
+                'textarea',
+                'primer' . $i,
+                get_string('primer', 'local_aiquestions'),
+                'wrap="virtual" rows="10" cols="50"'
+            );
             $mform->setType('primer' . $i, PARAM_RAW);
             $mform->setDefault('primer' . $i, get_config('local_aiquestions', 'presettprimer' . $primer));
             $mform->addHelpButton('primer' . $i, 'primer', 'local_aiquestions');
@@ -87,8 +115,12 @@ class local_aiquestions_story_form extends moodleform {
             $mform->hideif('primer' . $i, 'preset', 'neq', $i);
 
             // Instructions.
-            $mform->addElement('textarea', 'instructions' . $i, get_string('instructions', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="50"');
+            $mform->addElement(
+                'textarea',
+                'instructions' . $i,
+                get_string('instructions', 'local_aiquestions'),
+                'wrap="virtual" rows="10" cols="50"'
+            );
             $mform->setType('instructions' . $i, PARAM_RAW);
             $mform->setDefault('instructions' . $i, get_config('local_aiquestions', 'presetinstructions' . $primer));
             $mform->addHelpButton('instructions' . $i, 'instructions', 'local_aiquestions');
@@ -96,14 +128,17 @@ class local_aiquestions_story_form extends moodleform {
             $mform->hideif('instructions' . $i, 'preset', 'neq', $i);
 
             // Example.
-            $mform->addElement('textarea', 'example' . $i, get_string('example', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="50"');
+            $mform->addElement(
+                'textarea',
+                'example' . $i,
+                get_string('example', 'local_aiquestions'),
+                'wrap="virtual" rows="10" cols="50"'
+            );
             $mform->setType('example' . $i, PARAM_RAW);
             $mform->setDefault('example' . $i, get_config('local_aiquestions', 'presetexample' . $primer));
             $mform->addHelpButton('example' . $i, 'example', 'local_aiquestions');
             $mform->hideif('example' . $i, 'editpreset');
             $mform->hideif('example' . $i, 'preset', 'neq', $i);
-
         }
 
         // Courseid.
@@ -111,8 +146,8 @@ class local_aiquestions_story_form extends moodleform {
         $mform->setType('courseid', PARAM_INT);
 
         $buttonarray = array();
-        $buttonarray[] =& $mform->createElement('submit', 'submitbutton', get_string('generate', 'local_aiquestions'));
-        $buttonarray[] =& $mform->createElement('cancel', 'cancel', get_string('backtocourse', 'local_aiquestions'));
+        $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('generate', 'local_aiquestions'));
+        $buttonarray[] = &$mform->createElement('cancel', 'cancel', get_string('backtocourse', 'local_aiquestions'));
         $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
     }
     /**
@@ -122,7 +157,8 @@ class local_aiquestions_story_form extends moodleform {
      * @param array $files
      * @return array
      */
-    public function validation($data, $files) {
+    public function validation($data, $files)
+    {
         return array();
     }
 }
