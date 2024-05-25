@@ -64,14 +64,65 @@ class local_aiquestions_story_form extends moodleform
         $select->setSelected($defaultnumofquestions);
         $mform->setType('numofquestions', PARAM_INT);
 
-        // Number of questions.
+        // Exam focus.
         $select = $mform->addElement(
             'textarea',
-            'focus',
+            'examFocus',
             get_string('focus', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="50"'
+            'wrap="virtual" rows="6" cols="10"'
         );
-        $mform->setType('numofquestions', PARAM_RAW);
+        $mform->setType('focus', PARAM_RAW);
+
+        // Language
+        $defaultlanguage = "English";
+        $select = $mform->addElement(
+            'select',
+            'examLanguage',
+            get_string('languagedesc', 'local_aiquestions'),
+            array('English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi",'Spanish': 'Spanish', 'German' => "German", 'French' => "French", 'Russian' =>"Russian", 'Arabic'=> "Arabic")
+        );
+        $mform->setType('language', PARAM_RAW);
+
+        // Text
+        $select = $mform->addElement(
+            'text',
+            'text',
+            get_string('text', 'local_aiquestions'),
+            'wrap="virtual" rows="10" cols="10"'
+        );
+        $mform->setType('text', PARAM_RAW);
+        $select->setSelected($defaultlanguage);
+
+        // field (exam type)
+        $select = $mform->addElement(
+            'select',
+            'field',
+            "Choose the exam type" //move this to lang file later
+            array("Topic"=>"topic","Text"=>"text","Based On"=>"based","URL"=>"url","Math"=>"math")// move the aray to satatic config
+        );
+        $mform->setType('text', PARAM_RAW);
+        $select->setSelected("Topic");
+
+        // question level
+        $select = $mform->addElement(
+            'select',
+            'questionLevel',
+            "Question Level" //move this to lang file later
+            array("1st grade"=>"1st grade","2st grade"=>"2st grade","3st grade"=>"3st grade","4st grade"=>"4st grade","5st grade"=>"5st grade","6st grade"=>"6st grade","7st grade"=>"7st grade","8st grade"=>"8st grade","9st grade"=>"9st grade","10st grade"=>"10st grade","11st grade"=>"11st grade","12st grade"=>"12st grade")// move the aray to satatic config
+        );
+        $mform->setType('questionLevel', PARAM_RAW);
+        $select->setSelected("1st grade");
+
+        // exam tags
+        $select = $mform->addElement(
+            'select',
+            'examTags',
+            "Select Tags" //move this to lang file later
+            array("Cognitive literacy"=>"Cognitive literacy","Mathematical literacy"=>"Mathematical literacy","Scientific literacy"=>"Scientific literacy","Critical Thinking"=>"Critical Thinking")// move the aray to satatic config
+        );
+        $mform->setType('examTags', PARAM_RAW);
+        $mform->getElement('examTags')->setMultiple(true);
+        $select->setSelected("Cognitive literacy");
 
         // Story.
         $mform->addElement(

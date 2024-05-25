@@ -45,6 +45,8 @@ $string['gotoquestionbank'] = 'עברו לבנק השאלות';
 $string['generatemore'] = 'יצירת שאלות נוספות';
 $string['createdquestionwithid'] = 'נוצרה שאלה עם מזהה ';
 $string['language'] = 'שפה';
+$string['text'] = 'הכנס את הנושא או הפסקה שהשאלות יעסקו בו';
+$string['focus'] = 'הכנס מיקוד לשאלות שברצונך ליצור';
 $string['languagedesc'] = 'נא לבחור כאן את השפה שבה ברצונך להשתמש ביצירת השאלות.<br>
 יש לשים לב שישנן שפות שנתמכות פחות מאחרות על ידי ChatGPT.';
 $string['usepersonalprompt'] = 'שימוש בהתג מותאם אישית';
