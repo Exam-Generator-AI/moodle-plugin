@@ -41,8 +41,8 @@ function local_aiquestions_get_questions($data)
 
     $key = get_config('local_aiquestions', 'key');
     $model = get_config('local_aiquestions', 'model');
-    $url = 'https://api.openai.com/v1/chat/completions';
-    $authorization = "Authorization: Bearer " . $key;
+    $url = 'https://www.exam-generator.com/generate_exam'; //change this to sync route
+    $authorization = "Authorization: Bearer " . ;
 
     // Remove new lines and carriage returns.
     $story = str_replace("\n", " ", $data->story);
@@ -52,14 +52,21 @@ function local_aiquestions_get_questions($data)
     $example = str_replace("\n", " ", $data->example);
     $example = str_replace("\r", " ", $example);
 
+    $numofquestions = $data->numofquestions;
+    $text = $data->text
+    $examTags = $data->examTags
+    $questionLevel = $data->questionLevel
+    $examLanguage = $data->examLanguage
+    $field = $data->field
+    $examFocus = $data->examFocus
+
+    
     $data = '{
-        "model": "' . $model . '",
-        "messages": [
-            {"role": "system", "content": "' . $primer . '"},
-            {"role": "system", "name":"example_user", "content": "' . $instructions . '"},
-            {"role": "system", "name": "example_assistant", "content": "' . $example . '"},
-            {"role": "user", "content": "Now, create ' . $data->numofquestions . ' questions for me based on this topic: ' . local_aiquestions_escape_json($story) . '"}
-            ]}';
+        "text": "'. $text .'", "field": "'. $field .'",
+        "examFocus": "'. $examFocus .'",
+        "examTags": "'. $examTags .'","examLanguage": "'. $examLanguage .'",
+        "questions": {"multiple_choice": "'. $numofquestions .'"},"levelQuestions": "'. $levelQuestions .'"
+    }';
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));

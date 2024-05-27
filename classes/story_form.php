@@ -66,12 +66,12 @@ class local_aiquestions_story_form extends moodleform
 
         // Exam focus.
         $select = $mform->addElement(
-            'textarea',
+            'text',
             'examFocus',
             get_string('focus', 'local_aiquestions'),
-            'wrap="virtual" rows="6" cols="10"'
+            'wrap="virtual" rows="6" cols="6"'
         );
-        $mform->setType('focus', PARAM_RAW);
+        $mform->setType('examFocus', PARAM_RAW);
 
         // Language
         $defaultlanguage = "English";
@@ -81,14 +81,14 @@ class local_aiquestions_story_form extends moodleform
             get_string('languagedesc', 'local_aiquestions'),
             array('English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi",'Spanish': 'Spanish', 'German' => "German", 'French' => "French", 'Russian' =>"Russian", 'Arabic'=> "Arabic")
         );
-        $mform->setType('language', PARAM_RAW);
+        $mform->setType('examLanguage', PARAM_RAW);
 
         // Text
         $select = $mform->addElement(
             'text',
             'text',
             get_string('text', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="10"'
+            'wrap="virtual" rows="7" cols="7"'
         );
         $mform->setType('text', PARAM_RAW);
         $select->setSelected($defaultlanguage);

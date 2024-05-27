@@ -54,7 +54,15 @@ class questions extends \core\task\adhoc_task
         $story = $data->story;
         $userid = $data->userid;
         $uniqid = $data->uniqid;
+        //exam section
         $numofquestions = $data->numofquestions;
+        $text = $data->text
+        $examTags = $data->examTags
+        $questionLevel = $data->questionLevel
+        $examLanguage = $data->examLanguage
+        $field = $data->field
+        $examFocus = $data->examFocus
+
 
         // Create the DB entry.
         $dbrecord = new \stdClass();
