@@ -33,14 +33,14 @@ defined('MOODLE_INTERNAL') || die();
  * @package     local_aiquestions
  * @category    admin
  */
-class questions extends \core\task\adhoc_task
+class questions 
 {
     /**
      * Execute the task.
      *
      * @return void
      */
-    public function execute()
+    public function execute($data)
     {
         global $DB, $CFG;
         require_once(__DIR__ . '/../../locallib.php');
@@ -48,7 +48,7 @@ class questions extends \core\task\adhoc_task
         $numoftries = get_config('local_aiquestions', 'numoftries');
 
         // Get the data from the task.
-        $data = $this->get_custom_data();
+        //$data = $this->get_custom_data();
         $courseid = $data->courseid;
         $category = $data->category;
         $story = $data->story;

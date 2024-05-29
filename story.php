@@ -57,7 +57,7 @@ $mform = new local_aiquestions_story_form();
 if ($mform->is_cancelled()) {
     redirect($CFG->wwwroot . '/course/view.php?id=' . $courseid);
 } else if ($data = $mform->get_data()) {
-
+    echo "data: " .$data->category ;
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
@@ -65,7 +65,7 @@ if ($mform->is_cancelled()) {
         $primer = 'primer' . $preset;
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
-        $task->set_custom_data([
+        /*$task->set_custom_data([
             'category' => $data->category,
             'primer' => $data->$primer,
             'instructions' => $data->$instructions,
@@ -81,16 +81,34 @@ if ($mform->is_cancelled()) {
             'field' => $data->field,
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
-        ]);
-        \core\task\manager::queue_adhoc_task($task);
+        ]);*/
+        $data = [
+            'category' => $data->category,
+            'primer' => $data->$primer,
+            'instructions' => $data->$instructions,
+            'example' => $data->$example,
+            'story' => $data->story,
+            'numofopenquestions' => $data->numofopenquestions,
+            'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
+            'courseid' => $data->courseid,
+            'userid' => $USER->id,
+            'uniqid' => $uniqid,
+            'questionLevel' => $data->questionLevel,
+            'examLanguage' => $data->examLanguage,
+            'field' => $data->field,
+            'examFocus' => $data->examFocus,
+            'skills' => $data->skills,
+        ];
+
+        $task->execute($data);
         $success = get_string('tasksuccess', 'local_aiquestions');
 
     } else {
         $error = get_string('taskerror', 'local_aiquestions');
     }
 
-    $lastcron = get_config('tool_task', 'lastcronstart');
-    $cronoverdue = ($lastcron < time() - 3600 * 24);
+    //$lastcron = get_config('tool_task', 'lastcronstart');
+    //$cronoverdue = ($lastcron < time() - 3600 * 24);
 
     $datafortemplate = [
         'courseid' => $courseid,
