@@ -56,12 +56,12 @@ class questions extends \core\task\adhoc_task
         $uniqid = $data->uniqid;
         //exam section
         $numofquestions = $data->numofquestions;
-        $text = $data->text
-        $examTags = $data->examTags
-        $questionLevel = $data->questionLevel
-        $examLanguage = $data->examLanguage
-        $field = $data->field
-        $examFocus = $data->examFocus
+        $text = $data->text;
+        $skills = $data->skills;
+        $questionLevel = $data->questionLevel;
+        $examLanguage = $data->examLanguage;
+        $field = $data->field;
+        $examFocus = $data->examFocus;
 
 
         // Create the DB entry.
@@ -95,9 +95,10 @@ class questions extends \core\task\adhoc_task
             $update->datemodified = time();
             $DB->update_record('local_aiquestions', $update);
 
+            echo "starting to get questions from OpenAI...\n";
             // Get questions from ChatGPT API.
             $questions = \local_aiquestions_get_questions($data);
-
+            echo "[local_aiquestions] Questions received from OpenAI...\n";
             // Print error message of ChatGPT API (if there are).
             if (isset($questions->error->message)) {
                 $error .= $questions->error->message;

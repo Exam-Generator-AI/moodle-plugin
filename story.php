@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - https://moodle.org/
+// This file is part of Moodle - https://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 require(__DIR__ . '/../../config.php');
 defined('MOODLE_INTERNAL') || die();
 
-// Get course id for creating the questions in it's bank.
 $courseid = optional_param('courseid', 0, PARAM_INT);
 
 if ($courseid == 0) {
@@ -35,7 +34,6 @@ if ($courseid == 0) {
 
 require_login($courseid);
 
-// Check if the user has the capability to create questions.
 $context = context_course::instance($courseid);
 require_capability('moodle/question:add', $context);
 
@@ -60,7 +58,6 @@ if ($mform->is_cancelled()) {
     redirect($CFG->wwwroot . '/course/view.php?id=' . $courseid);
 } else if ($data = $mform->get_data()) {
 
-    // Call the adhoc task.
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
@@ -68,26 +65,33 @@ if ($mform->is_cancelled()) {
         $primer = 'primer' . $preset;
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
-        $task->set_custom_data(['category' => $data->category,
-                                'primer' => $data->$primer,
-                                'instructions' => $data->$instructions,
-                                'example' => $data->$example,
-                                'story' => $data->story,
-                                'numofquestions' => $data->numofquestions,
-                                'courseid' => $data->courseid,
-                                'userid' => $USER->id,
-                                'uniqid' => $uniqid ]);
+        $task->set_custom_data([
+            'category' => $data->category,
+            'primer' => $data->$primer,
+            'instructions' => $data->$instructions,
+            'example' => $data->$example,
+            'story' => $data->story,
+            'numofopenquestions' => $data->numofopenquestions,
+            'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
+            'courseid' => $data->courseid,
+            'userid' => $USER->id,
+            'uniqid' => $uniqid,
+            'questionLevel' => $data->questionLevel,
+            'examLanguage' => $data->examLanguage,
+            'field' => $data->field,
+            'examFocus' => $data->examFocus,
+            'skills' => $data->skills,
+        ]);
         \core\task\manager::queue_adhoc_task($task);
         $success = get_string('tasksuccess', 'local_aiquestions');
 
     } else {
         $error = get_string('taskerror', 'local_aiquestions');
     }
-    // Check if the cron is overdue.
+
     $lastcron = get_config('tool_task', 'lastcronstart');
     $cronoverdue = ($lastcron < time() - 3600 * 24);
 
-    // Prepare the data for the template.
     $datafortemplate = [
         'courseid' => $courseid,
         'wwwroot' => $CFG->wwwroot,
@@ -95,10 +99,10 @@ if ($mform->is_cancelled()) {
         'userid' => $USER->id,
         'cron' => $cronoverdue,
     ];
-    // Load the ready template.
     echo $OUTPUT->render_from_template('local_aiquestions/loading', $datafortemplate);
 } else {
     $mform->display();
 }
 
 echo $OUTPUT->footer();
+?>

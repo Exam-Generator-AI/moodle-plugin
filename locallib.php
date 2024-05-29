@@ -32,38 +32,31 @@
 function local_aiquestions_get_questions($data) {
     global $CFG;
 
-    // Build primer.
-    $primer = $data->primer;
-    $primer .= "Write {$data->numofquestions} questions.";
-
     $key = get_config('local_aiquestions', 'key');
-    $model = get_config('local_aiquestions', 'model');
     $url = 'http://127.0.0.1:5000/generate/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
-    // Remove new lines and carriage returns.
+    // Extract the parameters from the $data object
     $story = str_replace(["\n", "\r"], " ", $data->story);
     $instructions = str_replace(["\n", "\r"], " ", $data->instructions);
     $example = str_replace(["\n", "\r"], " ", $data->example);
 
-    $numofquestions = $data->numofquestions;
-    $text = $data->text;
-    $examTags = $data->examTags;
-    $questionLevel = $data->questionLevel;
-    $examLanguage = $data->examLanguage;
-    $field = $data->field;
-    $examFocus = $data->examFocus;
-
+    // Prepare the data for the POST request
     $postData = json_encode([
-        'text' => $text,
-        'field' => $field,
-        'examFocus' => $examFocus,
-        'examTags' => $examTags,
-        'examLanguage' => $examLanguage,
-        'questions' => ['multiple_choice' => $numofquestions],
-        'levelQuestions' => $questionLevel
+        'numofopenquestions' => $data->numofopenquestions,
+        'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
+        'examFocus' => $data->examFocus,
+        'examLanguage' => $data->examLanguage,
+        'field' => $data->field,
+        'skills' => $data->skills,
+        'story' => $story,
+        'instructions' => $instructions,
+        'example' => $example,
+        'primer' => $data->primer,
+        'category' => $data->category
     ]);
 
+    // Initialize cURL
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");

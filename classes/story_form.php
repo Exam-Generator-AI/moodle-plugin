@@ -19,8 +19,6 @@
  *
  * @package     local_aiquestions
  * @category    admin
- * @copyright   2023 Ruthy Salomon <ruthy.salomon@gmail.com> , Yedidia Klein <yedidia@openapp.co.il>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -48,94 +46,152 @@ class local_aiquestions_story_form extends moodleform
             'questioncategory',
             'category',
             get_string('category', 'question'),
-            array('contexts' => $contexts)
+            ['contexts' => $contexts]
         );
         $mform->addHelpButton('category', 'category', 'local_aiquestions');
 
-
-        // Number of questions.
-        $defaultnumofquestions = 4;
-        $select = $mform->addElement(
+        // Number of open questions.
+        $mform->addElement(
             'select',
-            'numofquestions',
-            get_string('numofquestions', 'local_aiquestions'),
-            array('1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9, '10' => 10)
+            'numofopenquestions',
+            'Number of open questions',
+            range(0, 10)
         );
-        $select->setSelected($defaultnumofquestions);
-        $mform->setType('numofquestions', PARAM_INT);
+        $mform->setType('numofopenquestions', PARAM_INT);
+
+        // Number of multiple choice questions.
+        $mform->addElement(
+            'select',
+            'numofmultiplechoicequestions',
+            'Number of multiple choice questions',
+            range(0, 10)
+        );
+        $mform->setType('numofmultiplechoicequestions', PARAM_INT);
+
+        // JavaScript for validation.
+        $mform->addElement('html', '
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    var numofopenquestions = document.querySelector("select[name=\'numofopenquestions\']");
+                    var numofmultiplechoicequestions = document.querySelector("select[name=\'numofmultiplechoicequestions\']");
+                    var form = document.querySelector("form");
+
+                    function validateTotalQuestions() {
+                        var openQuestions = parseInt(numofopenquestions.value);
+                        var multipleChoiceQuestions = parseInt(numofmultiplechoicequestions.value);
+                        var totalQuestions = openQuestions + multipleChoiceQuestions;
+
+                        if (totalQuestions > 10) {
+                            if (this === numofopenquestions) {
+                                numofopenquestions.value = 10 - multipleChoiceQuestions;
+                            } else {
+                                numofmultiplechoicequestions.value = 10 - openQuestions;
+                            }
+                            alert("The total number of open and multiple choice questions cannot exceed 10. Adjusted the number automatically.");
+                        }
+                    }
+
+                    numofopenquestions.addEventListener("change", validateTotalQuestions);
+                    numofmultiplechoicequestions.addEventListener("change", validateTotalQuestions);
+                });
+            </script>
+        ');
+
+        // Checkbox for determining number of questions based on length or number.
+        $mform->addElement('checkbox', 'basedonlength', 'Determine number of questions based on length');
+        $mform->setType('basedonlength', PARAM_BOOL);
+
+        // Numerical text box for the number of questions if based on length.
+        $mform->addElement('text', 'numofquestionslength', 'Number of questions based on length');
+        $mform->setType('numofquestionslength', PARAM_INT);
+        $mform->disabledIf('numofquestionslength', 'basedonlength', 'notchecked');
 
         // Exam focus.
-        $select = $mform->addElement(
-            'text',
+        $mform->addElement(
+            'textarea',
             'examFocus',
-            get_string('focus', 'local_aiquestions'),
-            'wrap="virtual" rows="6" cols="6"'
+            'Questions focus',
+            ['rows' => 6, 'cols' => 50]
         );
         $mform->setType('examFocus', PARAM_RAW);
 
-        // Language
-        $defaultlanguage = "English";
-        $select = $mform->addElement(
+        // Language.
+        $languages = ['English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi", 'Spanish' => 'Spanish', 'German' => "German", 'French' => "French", 'Russian' => "Russian", 'Arabic' => "Arabic"];
+        $mform->addElement(
             'select',
             'examLanguage',
-            get_string('languagedesc', 'local_aiquestions'),
-            array('English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi",'Spanish': 'Spanish', 'German' => "German", 'French' => "French", 'Russian' =>"Russian", 'Arabic'=> "Arabic")
+            'Questions language',
+            $languages
         );
-        $mform->setType('examLanguage', PARAM_RAW);
 
-        // Text
-        $select = $mform->addElement(
-            'text',
-            'text',
-            get_string('text', 'local_aiquestions'),
-            'wrap="virtual" rows="7" cols="7"'
-        );
-        $mform->setType('text', PARAM_RAW);
-        $select->setSelected($defaultlanguage);
-
-        // field (exam type)
-        $select = $mform->addElement(
+        // Field (exam type).
+        $fieldoptions = ["Topic" => "topic", "Text" => "text", "Upload file" => "Upload file", "URL" => "url", "Math" => "math"];
+        $mform->addElement(
             'select',
             'field',
-            "Choose the exam type" //move this to lang file later
-            array("Topic"=>"topic","Text"=>"text","Based On"=>"based","URL"=>"url","Math"=>"math")// move the aray to satatic config
+            'Input field type',
+            $fieldoptions
         );
-        $mform->setType('text', PARAM_RAW);
-        $select->setSelected("Topic");
+        $mform->setDefault('field', 'Topic'); // Set default value
+        $mform->setType('field', PARAM_RAW);
 
-        // question level
-        $select = $mform->addElement(
+        // Container for dynamically changing input field.
+        $mform->addElement('html', '<div class="dynamic-field-container" style="margin-top: 10px; margin-left: 150px;"></div>');
+
+        // Add a listener to dynamically change the input field based on the selected field type.
+        $mform->addElement('html', '
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    var fieldSelect = document.querySelector("select[name=\'field\']");
+                    var fieldInputContainer = document.querySelector(".dynamic-field-container");
+                    
+                    function updateFieldInput() {
+                        var selectedValue = fieldSelect.value;
+                        fieldInputContainer.innerHTML = "";
+                        
+                        if (selectedValue === "Upload file") {
+                            fieldInputContainer.innerHTML = "<input type=\'file\' name=\'uploadedfile\' style=\'margin-left: 0px;\' />";
+                        } else {
+                            fieldInputContainer.innerHTML = "<textarea name=\'textinput\' rows=\'4\' cols=\'50\' style=\'margin-left: 0px;\'></textarea>";
+                        }
+                    }
+                    
+                    fieldSelect.addEventListener("change", updateFieldInput);
+                    updateFieldInput(); // Initial call to set the correct input
+                });
+            </script>
+        ');
+
+        // Question level.
+        $mform->addElement(
             'select',
             'questionLevel',
-            "Question Level" //move this to lang file later
-            array("1st grade"=>"1st grade","2st grade"=>"2st grade","3st grade"=>"3st grade","4st grade"=>"4st grade","5st grade"=>"5st grade","6st grade"=>"6st grade","7st grade"=>"7st grade","8st grade"=>"8st grade","9st grade"=>"9st grade","10st grade"=>"10st grade","11st grade"=>"11st grade","12st grade"=>"12st grade")// move the aray to satatic config
+            'Questions Level',
+            ["Academic" => "Academic"]
         );
-        $mform->setType('questionLevel', PARAM_RAW);
-        $select->setSelected("1st grade");
 
-        // exam tags
-        $select = $mform->addElement(
+        // Exam tags.
+        $skills = ["Cognitive literacy" => "Cognitive literacy", "Mathematical literacy" => "Mathematical literacy", "Scientific literacy" => "Scientific literacy", "Critical Thinking" => "Critical Thinking"];
+        $mform->addElement(
             'select',
-            'examTags',
-            "Select Tags" //move this to lang file later
-            array("Cognitive literacy"=>"Cognitive literacy","Mathematical literacy"=>"Mathematical literacy","Scientific literacy"=>"Scientific literacy","Critical Thinking"=>"Critical Thinking")// move the aray to satatic config
+            'skills',
+            'Skills',
+            $skills,
+            ['multiple' => true, 'size' => 3]
         );
-        $mform->setType('examTags', PARAM_RAW);
-        $mform->getElement('examTags')->setMultiple(true);
-        $select->setSelected("Cognitive literacy");
 
         // Story.
         $mform->addElement(
             'textarea',
             'story',
             get_string('story', 'local_aiquestions'),
-            'wrap="virtual" rows="10" cols="50"'
-        ); // This model's maximum context length is 4097 tokens. We limit the story to 4096 tokens.
+            ['rows' => 10, 'cols' => 50]
+        );
         $mform->setType('story', PARAM_RAW);
         $mform->addHelpButton('story', 'story', 'local_aiquestions');
 
         // Preset.
-        $presets = array();
+        $presets = [];
         for ($i = 0; $i < 10; $i++) {
             if ($presetname = get_config('local_aiquestions', 'presetname' . $i)) {
                 $presets[] = $presetname;
@@ -157,50 +213,52 @@ class local_aiquestions_story_form extends moodleform
                 'textarea',
                 'primer' . $i,
                 get_string('primer', 'local_aiquestions'),
-                'wrap="virtual" rows="10" cols="50"'
+                ['rows' => 10, 'cols' => 50]
             );
             $mform->setType('primer' . $i, PARAM_RAW);
             $mform->setDefault('primer' . $i, get_config('local_aiquestions', 'presettprimer' . $primer));
             $mform->addHelpButton('primer' . $i, 'primer', 'local_aiquestions');
-            $mform->hideif('primer' . $i, 'editpreset');
-            $mform->hideif('primer' . $i, 'preset', 'neq', $i);
+            $mform->hideIf('primer' . $i, 'editpreset');
+            $mform->hideIf('primer' . $i, 'preset', 'neq', $i);
 
             // Instructions.
             $mform->addElement(
                 'textarea',
                 'instructions' . $i,
                 get_string('instructions', 'local_aiquestions'),
-                'wrap="virtual" rows="10" cols="50"'
+                ['rows' => 10, 'cols' => 50]
             );
             $mform->setType('instructions' . $i, PARAM_RAW);
             $mform->setDefault('instructions' . $i, get_config('local_aiquestions', 'presetinstructions' . $primer));
             $mform->addHelpButton('instructions' . $i, 'instructions', 'local_aiquestions');
-            $mform->hideif('instructions' . $i, 'editpreset');
-            $mform->hideif('instructions' . $i, 'preset', 'neq', $i);
+            $mform->hideIf('instructions' . $i, 'editpreset');
+            $mform->hideIf('instructions' . $i, 'preset', 'neq', $i);
 
             // Example.
             $mform->addElement(
                 'textarea',
                 'example' . $i,
                 get_string('example', 'local_aiquestions'),
-                'wrap="virtual" rows="10" cols="50"'
+                ['rows' => 10, 'cols' => 50]
             );
             $mform->setType('example' . $i, PARAM_RAW);
             $mform->setDefault('example' . $i, get_config('local_aiquestions', 'presetexample' . $primer));
             $mform->addHelpButton('example' . $i, 'example', 'local_aiquestions');
-            $mform->hideif('example' . $i, 'editpreset');
-            $mform->hideif('example' . $i, 'preset', 'neq', $i);
+            $mform->hideIf('example' . $i, 'editpreset');
+            $mform->hideIf('example' . $i, 'preset', 'neq', $i);
         }
 
         // Courseid.
         $mform->addElement('hidden', 'courseid', $courseid);
         $mform->setType('courseid', PARAM_INT);
 
-        $buttonarray = array();
+        // Buttons.
+        $buttonarray = [];
         $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('generate', 'local_aiquestions'));
         $buttonarray[] = &$mform->createElement('cancel', 'cancel', get_string('backtocourse', 'local_aiquestions'));
-        $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
+        $mform->addGroup($buttonarray, 'buttonar', '', [' '], false);
     }
+
     /**
      * Form validation
      *
@@ -210,6 +268,13 @@ class local_aiquestions_story_form extends moodleform
      */
     public function validation($data, $files)
     {
-        return array();
+        $errors = [];
+        $totalquestions = $data['numofopenquestions'] + $data['numofmultiplechoicequestions'];
+        if ($totalquestions > 10) {
+            $errors['numofopenquestions'] = get_string('exceedstotalquestions', 'local_aiquestions');
+            $errors['numofmultiplechoicequestions'] = get_string('exceedstotalquestions', 'local_aiquestions');
+        }
+        return $errors;
     }
 }
+?>
