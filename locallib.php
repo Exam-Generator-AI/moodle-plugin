@@ -23,63 +23,59 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 /**
  * Get questions from the API.
  *
- * @param object data data to create questions from
- * @return object questions of generated questions
+ * @param object $data Data to create questions from
+ * @return object Questions of generated questions
  */
-function local_aiquestions_get_questions($data)
-{
-
+function local_aiquestions_get_questions($data) {
     global $CFG;
 
     // Build primer.
     $primer = $data->primer;
-    $primer .= "Write $data->numofquestions questions.";
+    $primer .= "Write {$data->numofquestions} questions.";
 
     $key = get_config('local_aiquestions', 'key');
     $model = get_config('local_aiquestions', 'model');
-    $url = 'https://www.exam-generator.com/generate_exam'; //change this to sync route
-    $authorization = "Authorization: Bearer " . ;
+    $url = 'http://127.0.0.1:5000/generate/exam/sync'; // Change this to sync route
+    $authorization = "Authorization: Bearer " . $key;
 
     // Remove new lines and carriage returns.
-    $story = str_replace("\n", " ", $data->story);
-    $story = str_replace("\r", " ", $story);
-    $instructions = str_replace("\n", " ", $data->instructions);
-    $instructions = str_replace("\r", " ", $instructions);
-    $example = str_replace("\n", " ", $data->example);
-    $example = str_replace("\r", " ", $example);
+    $story = str_replace(["\n", "\r"], " ", $data->story);
+    $instructions = str_replace(["\n", "\r"], " ", $data->instructions);
+    $example = str_replace(["\n", "\r"], " ", $data->example);
 
     $numofquestions = $data->numofquestions;
-    $text = $data->text
-    $examTags = $data->examTags
-    $questionLevel = $data->questionLevel
-    $examLanguage = $data->examLanguage
-    $field = $data->field
-    $examFocus = $data->examFocus
+    $text = $data->text;
+    $examTags = $data->examTags;
+    $questionLevel = $data->questionLevel;
+    $examLanguage = $data->examLanguage;
+    $field = $data->field;
+    $examFocus = $data->examFocus;
 
-    
-    $data = '{
-        "text": "'. $text .'", "field": "'. $field .'",
-        "examFocus": "'. $examFocus .'",
-        "examTags": "'. $examTags .'","examLanguage": "'. $examLanguage .'",
-        "questions": {"multiple_choice": "'. $numofquestions .'"},"levelQuestions": "'. $levelQuestions .'"
-    }';
+    $postData = json_encode([
+        'text' => $text,
+        'field' => $field,
+        'examFocus' => $examFocus,
+        'examTags' => $examTags,
+        'examLanguage' => $examLanguage,
+        'questions' => ['multiple_choice' => $numofquestions],
+        'levelQuestions' => $questionLevel
+    ]);
 
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
     $result = json_decode(curl_exec($ch));
     curl_close($ch);
 
     $questions = new stdClass(); // The questions object.
-    if (isset($result->gift)) { //TODO: return from exam server 
+    if (isset($result->gift)) { // TODO: return from exam server 
         $questions->text = $result->gift;
         $questions->prompt = $story;
     } else {
@@ -88,18 +84,18 @@ function local_aiquestions_get_questions($data)
     }
     return $questions;
 }
+
 /**
  * Create questions from data got from ChatGPT output.
  *
- * @param int $courseid course id
- * @param int $category course category
- * @param string $gift questions in GIFT format
- * @param int $numofquestions number of questions to generate
- * @param int $userid user id
- * @return array of objects of created questions
+ * @param int $courseid Course ID
+ * @param int $category Course category
+ * @param string $gift Questions in GIFT format
+ * @param int $numofquestions Number of questions to generate
+ * @param int $userid User ID
+ * @return array Array of objects of created questions
  */
-function local_aiquestions_create_questions($courseid, $category, $gift, $numofquestions, $userid)
-{
+function local_aiquestions_create_questions($courseid, $category, $gift, $numofquestions, $userid) {
     global $CFG, $USER, $DB;
 
     require_once($CFG->libdir . '/questionlib.php');
@@ -107,7 +103,6 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     require_once($CFG->dirroot . '/question/format/gift/format.php');
 
     $qformat = new \qformat_gift();
-
     $coursecontext = \context_course::instance($courseid);
 
     // Get question category TODO: there is probably a better way to do this.
@@ -164,28 +159,27 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         return false;
     }
 }
+
 /**
- * Escape json.
+ * Escape JSON.
  *
- * @param string $value json to escape
- * @return string result escaped json
+ * @param string $value JSON to escape
+ * @return string Result escaped JSON
  */
-function local_aiquestions_escape_json($value)
-{
-    $escapers = array("\\", "/", "\"", "\n", "\r", "\t", "\x08", "\x0c");
-    $replacements = array("\\\\", "\\/", "\\\"", "\\n", "\\r", "\\t", "\\f", "\\b");
+function local_aiquestions_escape_json($value) {
+    $escapers = ["\\", "/", "\"", "\n", "\r", "\t", "\x08", "\x0c"];
+    $replacements = ["\\\\", "\\/", "\\\"", "\\n", "\\r", "\\t", "\\f", "\\b"];
     $result = str_replace($escapers, $replacements, $value);
     return $result;
 }
 
 /**
- * Check if the gift format is valid.
+ * Check if the GIFT format is valid.
  *
- * @param string $gift questions in GIFT format
- * @return bool true if valid, false if not
+ * @param string $gift Questions in GIFT format
+ * @return bool True if valid, false if not
  */
-function local_aiquestions_check_gift($gift)
-{
+function local_aiquestions_check_gift($gift) {
     $questions = explode("\n\n", $gift);
 
     foreach ($questions as $question) {
@@ -194,25 +188,22 @@ function local_aiquestions_check_gift($gift)
         if (isset($matches[1])) {
             $qlength = strlen($matches[1]);
         } else {
-            return false;
-            // Error : Question title not found.
+            return false; // Error: Question title not found.
         }
         if ($qlength < 10) {
-            return false;
-            // Error : Question length too short.
+            return false; // Error: Question length too short.
         }
         preg_match('/\{(.*)\}/', $qa, $matches);
         if (isset($matches[1])) {
             $wrongs = substr_count($matches[1], "~");
             $right = substr_count($matches[1], "=");
         } else {
-            return false;
-            // Error : Answers not found.
+            return false; // Error: Answers not found.
         }
         if ($wrongs != 3 || $right != 1) {
-            return false;
-            // Error : There is no single right answers or no 3 wrong answers.
+            return false; // Error: There is no single right answer or no 3 wrong answers.
         }
     }
     return true;
 }
+?>
