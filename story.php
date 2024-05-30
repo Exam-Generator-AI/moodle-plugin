@@ -68,10 +68,6 @@ if ($mform->is_cancelled()) {
 
         $data = (object) [
             'category' => $data->category,
-            'primer' => $data->$primer,
-            'instructions' => $data->$instructions,
-            'example' => $data->$example,
-            'story' => $data->story,
             'numofopenquestions' => $data->numofopenquestions,
             'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
             'courseid' => $data->courseid,

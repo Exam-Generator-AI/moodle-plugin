@@ -40,6 +40,27 @@ class local_aiquestions_story_form extends moodleform
         global $courseid;
         $mform = $this->_form;
 
+        // Add some CSS to improve the UI
+        $mform->addElement('html', '
+            <style>
+                .mform .fitem .fitemtitle {
+                    width: 20%;
+                }
+                .mform .fitem .felement {
+                    width: 75%;
+                }
+                .mform .dynamic-field-container {
+                    margin-top: 10px;
+                    margin-left: 20%;
+                }
+                .mform .fitem .felement select, 
+                .mform .fitem .felement input[type="file"],
+                .mform .fitem .felement textarea {
+                    width: 100%;
+                }
+            </style>
+        ');
+
         // Question category.
         $contexts = [context_course::instance($courseid)];
         $mform->addElement(
@@ -136,7 +157,7 @@ class local_aiquestions_story_form extends moodleform
         $mform->setType('field', PARAM_RAW);
 
         // Container for dynamically changing input field.
-        $mform->addElement('html', '<div class="dynamic-field-container" style="margin-top: 10px; margin-left: 150px;"></div>');
+        $mform->addElement('html', '<div class="dynamic-field-container"></div>');
 
         // Add a listener to dynamically change the input field based on the selected field type.
         $mform->addElement('html', '
@@ -150,9 +171,9 @@ class local_aiquestions_story_form extends moodleform
                         fieldInputContainer.innerHTML = "";
                         
                         if (selectedValue === "Upload file") {
-                            fieldInputContainer.innerHTML = "<input type=\'file\' name=\'uploadedfile\' style=\'margin-left: 0px;\' />";
+                            fieldInputContainer.innerHTML = "<input type=\'file\' name=\'uploadedfile\' />";
                         } else {
-                            fieldInputContainer.innerHTML = "<textarea name=\'textinput\' rows=\'4\' cols=\'50\' style=\'margin-left: 0px;\'></textarea>";
+                            fieldInputContainer.innerHTML = "<textarea name=\'textinput\' rows=\'4\' cols=\'50\'></textarea>";
                         }
                     }
                     
@@ -179,74 +200,6 @@ class local_aiquestions_story_form extends moodleform
             $skills,
             ['multiple' => true, 'size' => 3]
         );
-
-        // Story.
-        $mform->addElement(
-            'textarea',
-            'story',
-            get_string('story', 'local_aiquestions'),
-            ['rows' => 10, 'cols' => 50]
-        );
-        $mform->setType('story', PARAM_RAW);
-        $mform->addHelpButton('story', 'story', 'local_aiquestions');
-
-        // Preset.
-        $presets = [];
-        for ($i = 0; $i < 10; $i++) {
-            if ($presetname = get_config('local_aiquestions', 'presetname' . $i)) {
-                $presets[] = $presetname;
-            }
-        }
-        $mform->addElement('select', 'preset', get_string('preset', 'local_aiquestions'), $presets);
-
-        // Edit preset.
-        $mform->addElement('checkbox', 'editpreset', get_string('editpreset', 'local_aiquestions'));
-        $mform->addElement('html', get_string('shareyourprompts', 'local_aiquestions'));
-
-        // Create elements for all presets.
-        for ($i = 0; $i < 10; $i++) {
-
-            $primer = $i + 1;
-
-            // Primer.
-            $mform->addElement(
-                'textarea',
-                'primer' . $i,
-                get_string('primer', 'local_aiquestions'),
-                ['rows' => 10, 'cols' => 50]
-            );
-            $mform->setType('primer' . $i, PARAM_RAW);
-            $mform->setDefault('primer' . $i, get_config('local_aiquestions', 'presettprimer' . $primer));
-            $mform->addHelpButton('primer' . $i, 'primer', 'local_aiquestions');
-            $mform->hideIf('primer' . $i, 'editpreset');
-            $mform->hideIf('primer' . $i, 'preset', 'neq', $i);
-
-            // Instructions.
-            $mform->addElement(
-                'textarea',
-                'instructions' . $i,
-                get_string('instructions', 'local_aiquestions'),
-                ['rows' => 10, 'cols' => 50]
-            );
-            $mform->setType('instructions' . $i, PARAM_RAW);
-            $mform->setDefault('instructions' . $i, get_config('local_aiquestions', 'presetinstructions' . $primer));
-            $mform->addHelpButton('instructions' . $i, 'instructions', 'local_aiquestions');
-            $mform->hideIf('instructions' . $i, 'editpreset');
-            $mform->hideIf('instructions' . $i, 'preset', 'neq', $i);
-
-            // Example.
-            $mform->addElement(
-                'textarea',
-                'example' . $i,
-                get_string('example', 'local_aiquestions'),
-                ['rows' => 10, 'cols' => 50]
-            );
-            $mform->setType('example' . $i, PARAM_RAW);
-            $mform->setDefault('example' . $i, get_config('local_aiquestions', 'presetexample' . $primer));
-            $mform->addHelpButton('example' . $i, 'example', 'local_aiquestions');
-            $mform->hideIf('example' . $i, 'editpreset');
-            $mform->hideIf('example' . $i, 'preset', 'neq', $i);
-        }
 
         // Courseid.
         $mform->addElement('hidden', 'courseid', $courseid);

@@ -40,7 +40,7 @@ function local_aiquestions_get_questions($data) {
     global $CFG;
 
     $key = "123456"; // TODO: Change this to the actual key
-    $url = 'http://127.0.0.1:5000/generate/exam/sync'; // Change this to sync route
+    $url = 'http://host.docker.internal:5000/generate/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
     // Extract the parameters from the $data object
@@ -56,10 +56,6 @@ function local_aiquestions_get_questions($data) {
         'examLanguage' => $data->examLanguage,
         'field' => $data->field,
         'skills' => $data->skills,
-        'story' => $story,
-        'instructions' => $instructions,
-        'example' => $example,
-        'primer' => $data->primer,
         'category' => $data->category
     ]);
 
@@ -73,14 +69,14 @@ function local_aiquestions_get_questions($data) {
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
 
     // Print message before sending the request
-    echo "<script>console.log('Sending request to exam server...');</script>";
+    mtrace("Sending request to exam server...");
 
     // Execute the request and wait for the response
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     // Print message after receiving the response
-    echo "<script>console.log('Received response from exam server.');</script>";
+    mtrace("<script>console.log('Received response from exam server.');</script>");
 
     // Check for cURL errors
     if (curl_errno($ch)) {
