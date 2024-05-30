@@ -48,23 +48,43 @@ function local_aiquestions_get_questions($data) {
     $instructions = str_replace(["\n", "\r"], " ", $data->instructions);
     $example = str_replace(["\n", "\r"], " ", $data->example);
 
-    // Prepare the data for the POST request
-    $postData = json_encode([
-        'numofopenquestions' => $data->numofopenquestions,
-        'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
-        'examFocus' => $data->examFocus,
-        'examLanguage' => $data->examLanguage,
-        'field' => $data->field,
-        'skills' => $data->skills,
-        'category' => $data->category
-    ]);
+    // // Prepare the data for the POST request
+    // $postData = json_encode([
+    // 'numofopenquestions' => $data->numofopenquestions,
+    // 'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
+    //     'examFocus' => $data->examFocus,
+    //     'examLanguage' => $data->examLanguage,
+    //     'field' => $data->field,
+    //     'skills' => $data->skills,
+    //     'category' => $data->category
+    // ]);
+    $levelQuestions = $data->questionLevel;
+    $text = $data->textinput;
+    // $examTags = $data->skills;//TODO: fix skills to send Ids
+    $examTags = [];
+    $numofopenquestions = $data->numofopenquestions;
+    $multipleQuestions = $data->numofopenquestions
+    $examLanguage = $data->examLanguage;
+    $field = $data->field;
+    $examFocus = $data->examFocus;
+    $example = "";
+    $payload = [];
+    $isClosedContent = false;
+
+
+      
+    $data = '{
+        "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
+        "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
+        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $data->numofmultiplechoicequestions .'},"levelQuestions": "'. $levelQuestions .'"
+    }';
 
     // Initialize cURL
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
 

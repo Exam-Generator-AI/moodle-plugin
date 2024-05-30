@@ -134,6 +134,7 @@ class local_aiquestions_story_form extends moodleform
             'Questions focus',
             ['rows' => 6, 'cols' => 50]
         );
+        $mform->setDefault('examFocus', ''); // Set default value
         $mform->setType('examFocus', PARAM_RAW);
 
         // Language.
@@ -146,18 +147,21 @@ class local_aiquestions_story_form extends moodleform
         );
 
         // Field (exam type).
-        $fieldoptions = ["Topic" => "topic", "Text" => "text", "Upload file" => "Upload file", "URL" => "url", "Math" => "math"];
+        $fieldoptions = ["topic" => "topic", "Text" => "text", "Upload file" => "Upload file", "URL" => "url", "Math" => "math"];
         $mform->addElement(
             'select',
             'field',
             'Input field type',
             $fieldoptions
         );
-        $mform->setDefault('field', 'Topic'); // Set default value
+        $mform->setDefault('field', 'topic'); // Set default value
         $mform->setType('field', PARAM_RAW);
 
         // Container for dynamically changing input field.
-        $mform->addElement('html', '<div class="dynamic-field-container"></div>');
+        $mform->addElement('html','<div class="dynamic-field-container"></div>');
+
+        $mform->addElement('hidden', 'textinput', 'hiddenfieldvalue');
+        $mform->setType('textinput', PARAM_RAW);
 
         // Add a listener to dynamically change the input field based on the selected field type.
         $mform->addElement('html', '
@@ -193,16 +197,18 @@ class local_aiquestions_story_form extends moodleform
 
         // Exam tags.
         $skills = ["Cognitive literacy" => "Cognitive literacy", "Mathematical literacy" => "Mathematical literacy", "Scientific literacy" => "Scientific literacy", "Critical Thinking" => "Critical Thinking"];
-        $mform->addElement(
+        $select = $mform->addElement(
             'select',
             'skills',
             'Skills',
             $skills,
             ['multiple' => true, 'size' => 3]
         );
-
+        $select->setMultiple(true);
+        
         // Courseid.
         $mform->addElement('hidden', 'courseid', $courseid);
+
         $mform->setType('courseid', PARAM_INT);
 
         // Buttons.

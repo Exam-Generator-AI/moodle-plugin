@@ -78,6 +78,7 @@ if ($mform->is_cancelled()) {
             'field' => $data->field,
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
+            'textinput' => $data->textinput
         ];
 
         $questions = \local_aiquestions_get_questions($data);
