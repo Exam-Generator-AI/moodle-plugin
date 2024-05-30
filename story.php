@@ -57,7 +57,7 @@ $mform = new local_aiquestions_story_form();
 if ($mform->is_cancelled()) {
     redirect($CFG->wwwroot . '/course/view.php?id=' . $courseid);
 } else if ($data = $mform->get_data()) {
-    echo "data: " .$data->category ;
+    echo "data: " . $data->category . "<br>";
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
@@ -65,24 +65,8 @@ if ($mform->is_cancelled()) {
         $primer = 'primer' . $preset;
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
-        /*$task->set_custom_data([
-            'category' => $data->category,
-            'primer' => $data->$primer,
-            'instructions' => $data->$instructions,
-            'example' => $data->$example,
-            'story' => $data->story,
-            'numofopenquestions' => $data->numofopenquestions,
-            'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
-            'courseid' => $data->courseid,
-            'userid' => $USER->id,
-            'uniqid' => $uniqid,
-            'questionLevel' => $data->questionLevel,
-            'examLanguage' => $data->examLanguage,
-            'field' => $data->field,
-            'examFocus' => $data->examFocus,
-            'skills' => $data->skills,
-        ]);*/
-        $data = [
+
+        $data = (object) [
             'category' => $data->category,
             'primer' => $data->$primer,
             'instructions' => $data->$instructions,
@@ -100,22 +84,34 @@ if ($mform->is_cancelled()) {
             'skills' => $data->skills,
         ];
 
-        $task->execute($data);
-        $success = get_string('tasksuccess', 'local_aiquestions');
+        $questions = \local_aiquestions_get_questions($data);
+        if (isset($questions->text)) {
+            $created = \local_aiquestions_create_questions(
+                $data->courseid,
+                $data->category,
+                $questions->text,
+                $data->numofopenquestions + $data->numofmultiplechoicequestions,
+                $data->userid
+            );
+
+            if ($created) {
+                echo "[local_aiquestions] Successfully created questions!";
+            } else {
+                echo "[local_aiquestions] Error: Failed to create questions.";
+            }
+        } else {
+            echo "[local_aiquestions] Error: No question text returned from API.";
+        }
 
     } else {
-        $error = get_string('taskerror', 'local_aiquestions');
+        echo get_string('taskerror', 'local_aiquestions');
     }
-
-    //$lastcron = get_config('tool_task', 'lastcronstart');
-    //$cronoverdue = ($lastcron < time() - 3600 * 24);
 
     $datafortemplate = [
         'courseid' => $courseid,
         'wwwroot' => $CFG->wwwroot,
         'uniqid' => $uniqid,
         'userid' => $USER->id,
-        'cron' => $cronoverdue,
     ];
     echo $OUTPUT->render_from_template('local_aiquestions/loading', $datafortemplate);
 } else {

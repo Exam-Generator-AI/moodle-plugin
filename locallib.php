@@ -29,10 +29,17 @@
  * @param object $data Data to create questions from
  * @return object Questions of generated questions
  */
+/**
+ * Get questions from the API.
+ *
+ * @param object $data Data to create questions from
+ * @return object Questions of generated questions
+ * @throws Exception if the request fails
+ */
 function local_aiquestions_get_questions($data) {
     global $CFG;
 
-    $key = get_config('local_aiquestions', 'key');
+    $key = "123456"; // TODO: Change this to the actual key
     $url = 'http://127.0.0.1:5000/generate/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
@@ -64,8 +71,36 @@ function local_aiquestions_get_questions($data) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
-    $result = json_decode(curl_exec($ch));
+
+    // Print message before sending the request
+    echo "<script>console.log('Sending request to exam server...');</script>";
+
+    // Execute the request and wait for the response
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Print message after receiving the response
+    echo "<script>console.log('Received response from exam server.');</script>";
+
+    // Check for cURL errors
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        curl_close($ch);
+        echo "<script>console.log('cURL error: $error_msg');</script>";
+        throw new Exception("cURL error: $error_msg");
+    }
+
+    // Close the cURL session
     curl_close($ch);
+
+    // Decode the response
+    $result = json_decode($response);
+
+    // Check if the response is valid
+    if ($httpCode !== 200 || $result === null) {
+        echo "<script>console.log('Invalid response received from exam server: $response');</script>";
+        throw new Exception("Invalid response received from exam server");
+    }
 
     $questions = new stdClass(); // The questions object.
     if (isset($result->gift)) { // TODO: return from exam server 
@@ -77,6 +112,7 @@ function local_aiquestions_get_questions($data) {
     }
     return $questions;
 }
+
 
 /**
  * Create questions from data got from ChatGPT output.
