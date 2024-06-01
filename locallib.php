@@ -63,7 +63,7 @@ function local_aiquestions_get_questions($data) {
     // $examTags = $data->skills;//TODO: fix skills to send Ids
     $examTags = [];
     $numofopenquestions = $data->numofopenquestions;
-    $multipleQuestions = $data->numofopenquestions
+    $multipleQuestions = $data->numofmultiplechoicequestions;
     $examLanguage = $data->examLanguage;
     $field = $data->field;
     $examFocus = $data->examFocus;
@@ -76,7 +76,7 @@ function local_aiquestions_get_questions($data) {
     $data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $data->numofmultiplechoicequestions .'},"levelQuestions": "'. $levelQuestions .'"
+        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'"
     }';
 
     // Initialize cURL
@@ -129,6 +129,18 @@ function local_aiquestions_get_questions($data) {
     return $questions;
 }
 
+function exam_log($data){
+    $log = json_encode($data);
+    $url = 'http://host.docker.internal:5000/log'; // Change this to sync route
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $log);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
+}
+
 
 /**
  * Create questions from data got from ChatGPT output.
@@ -169,17 +181,22 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     // Split questions based on blank lines.
     // Then loop through each question and create it.
     $questions = explode("\n\n", $gift);
+    echo "gift" . $gift;
+    echo "questions" . $questions;
 
-    if (count($questions) != $numofquestions) {
-        return false;
-    }
+    echo "question number from exam- ". count($questions)."num of question". $numofquestions;
+
+    // if (count($questions) != $numofquestions) {
+    //     return false;
+    // }
     $createdquestions = []; // Array of objects of created questions.
     foreach ($questions as $question) {
         $singlequestion = explode("\n", $question);
+        echo "question text". $singlequestion[0];
 
         // Manipulating question text manually for question text field.
-        $questiontext = explode('{', $singlequestion[0]);
-        $questiontext = trim(preg_replace('/^.*::/', '', $questiontext[0]));
+        // $questiontext = explode('{', $singlequestion[0]);
+        $questiontext = trim(preg_replace('/^.*::/', '', $singlequestion[0]));
         $qtype = 'multichoice';
         $q = $qformat->readquestion($singlequestion);
 

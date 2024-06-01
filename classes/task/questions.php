@@ -100,19 +100,18 @@ class questions
             $questions = \local_aiquestions_get_questions($data);
             echo "[local_aiquestions] Questions received from OpenAI...\n";
             // Print error message of ChatGPT API (if there are).
-            if (isset($questions->error->message)) {
-                $error .= $questions->error->message;
+            // if (isset($questions->error->message)) {
+            //     $error .= $questions->error->message;
 
-                // Print error message to cron/adhoc output.
-                echo "[local_aiquestions] Error : $error.\n";
-            }
-
+            //     // Print error message to cron/adhoc output.
+            //     echo "[local_aiquestions] Error : $error.\n";
+            // }
             // Check gift format.
             if (property_exists($questions, 'text')) {
-                if (\local_aiquestions_check_gift($questions->text)) {
+                // if (\local_aiquestions_check_gift($questions->text)) {
 
                     // Create the questions, return an array of objetcs of the created questions.
-                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $numofquestions, $userid);
+                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions, $userid);
                     $j = 0;
                     foreach ($created as $question) {
                         $success[$j]['id'] = $question->id;
@@ -129,7 +128,7 @@ class questions
                     $update->success = json_encode(array_values($success));
                     $update->datemodified = time();
                     $DB->update_record('local_aiquestions', $update);
-                }
+                // }
             } else {
                 echo "[local_aiquestions] Error: No question text returned \n";
             }

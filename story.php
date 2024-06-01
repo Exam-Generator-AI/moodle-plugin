@@ -81,7 +81,8 @@ if ($mform->is_cancelled()) {
             'textinput' => $data->textinput
         ];
 
-        $questions = \local_aiquestions_get_questions($data);
+        // $questions = \local_aiquestions_get_questions($data);
+        $task->execute($data);
         if (isset($questions->text)) {
             $created = \local_aiquestions_create_questions(
                 $data->courseid,
