@@ -191,15 +191,18 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     // }
     $createdquestions = []; // Array of objects of created questions.
     foreach ($questions as $question) {
-        $singlequestion = explode("\n", $question);
-        echo "question text". $singlequestion[0];
+        $questionSections = explode("\n", $question);
+        echo "question text". $questionSections[0] . $questionSections[1] . $questionSections[2];
 
         // Manipulating question text manually for question text field.
-        // $questiontext = explode('{', $singlequestion[0]);
-        $questiontext = trim(preg_replace('/^.*::/', '', $singlequestion[0]));
-        $qtype = 'multichoice';
-        $q = $qformat->readquestion($singlequestion);
-
+        $extraQuestionDetails = explode('{', $question);
+        $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[0]));
+        $qtype = 'essay';
+        if(count($questionSections) > 4  && str_contains($extraQuestionDetails[1]," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
+            $qtype = 'multichoice';
+        }
+        $q = $qformat->readquestion($questionSections);    
+        echo "  qtype". $qtype;
         // Check if question is valid.
         if (!$q) {
             return false;
@@ -211,6 +214,21 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         $q->timemodified = time();
         $q->questiontext = ['text' => "<p>" . $questiontext . "</p>"];
         $q->questiontextformat = 1;
+
+        // Set default values for essay question type fields
+        if ($qtype === 'essay') {
+            $q->responseformat = 'editor';
+            $q->responserequired = 1;
+            $q->responsefieldlines = 15;
+            $q->minwordlimit = 0;
+            $q->maxwordlimit = 0;
+            $q->attachments = 0;
+            $q->attachmentsrequired = 0;
+            $q->filetypeslist = '';
+            $q->maxbytes = 0;
+            $q->graderinfo = array('text' => '', 'format' => FORMAT_HTML);
+            $q->responsetemplate = array('text' => '', 'format' => FORMAT_HTML);
+        }
 
         $created = question_bank::get_qtype($qtype)->save_question($q, $q);
         $createdquestions[] = $created;
