@@ -44,9 +44,9 @@ function local_aiquestions_get_questions($data) {
     $authorization = "Authorization: Bearer " . $key;
 
     // Extract the parameters from the $data object
-    $story = str_replace(["\n", "\r"], " ", $data->story);
-    $instructions = str_replace(["\n", "\r"], " ", $data->instructions);
-    $example = str_replace(["\n", "\r"], " ", $data->example);
+    //$story = str_replace(["\n", "\r"], " ", $data->story);
+    //$instructions = str_replace(["\n", "\r"], " ", $data->instructions);
+    //$example = str_replace(["\n", "\r"], " ", $data->example);
 
     // // Prepare the data for the POST request
     // $postData = json_encode([

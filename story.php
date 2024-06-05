@@ -66,6 +66,11 @@ if ($mform->is_cancelled()) {
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
 
+            // Handle file upload and extract text content
+        //$extractedText = $mform->handle_file_upload($data, $_FILES);
+        //if (!empty($extractedText)) {
+        //    $data->textinput = $extractedText;
+        //}
         $data = (object) [
             'category' => $data->category,
             'numofopenquestions' => $data->numofopenquestions,
