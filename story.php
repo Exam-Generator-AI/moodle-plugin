@@ -61,8 +61,6 @@ if ($mform->is_cancelled()) {
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
-        $preset = $data->preset;
-        $primer = 'primer' . $preset;
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
 
@@ -86,22 +84,13 @@ if ($mform->is_cancelled()) {
             'textinput' => $data->textinput
         ];
 
-        // $questions = \local_aiquestions_get_questions($data);
-        $task->execute($data);
+      $task->execute($data);
         if (isset($questions->text)) {
-            $created = \local_aiquestions_create_questions(
-                $data->courseid,
-                $data->category,
-                $questions->text,
-                $data->numofopenquestions + $data->numofmultiplechoicequestions,
-                $data->userid
-            );
-
-            if ($created) {
-                echo "[local_aiquestions] Successfully created questions!";
-            } else {
-                echo "[local_aiquestions] Error: Failed to create questions.";
-            }
+            // if ($created) {
+            //     echo "[local_aiquestions] Successfully created questions!";
+            // } else {
+            //     echo "[local_aiquestions] Error: Failed to create questions.";
+            // }
         } else {
             echo "[local_aiquestions] Error: No question text returned from API.";
         }

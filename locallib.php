@@ -40,7 +40,7 @@ function local_aiquestions_get_questions($data) {
     global $CFG;
 
     $key = "123456"; // TODO: Change this to the actual key
-    $url = 'http://host.docker.internal:5000/generate/exam/sync'; // Change this to sync route
+    $url = 'http://host.docker.internal:5000/generate/exam/mock'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
     // Extract the parameters from the $data object
@@ -129,18 +129,6 @@ function local_aiquestions_get_questions($data) {
     return $questions;
 }
 
-function exam_log($data){
-    $log = json_encode($data);
-    $url = 'http://host.docker.internal:5000/log'; // Change this to sync route
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $log);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
-}
-
 
 /**
  * Create questions from data got from ChatGPT output.
@@ -181,8 +169,6 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     // Split questions based on blank lines.
     // Then loop through each question and create it.
     $questions = explode("\n\n", $gift);
-    echo "gift" . $gift;
-    echo "questions" . $questions;
 
     echo "question number from exam- ". count($questions)."num of question". $numofquestions;
 
@@ -192,19 +178,19 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     $createdquestions = []; // Array of objects of created questions.
     foreach ($questions as $question) {
         $questionSections = explode("\n", $question);
-        echo "question text". $questionSections[0] . $questionSections[1] . $questionSections[2];
 
         // Manipulating question text manually for question text field.
-        $extraQuestionDetails = explode('{', $question);
+        $extraQuestionDetails = explode('{', $question)[1];
         $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[0]));
         $qtype = 'essay';
-        if(count($questionSections) > 4  && str_contains($extraQuestionDetails[1]," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
+        if(count($questionSections) > 4  && str_contains($extraQuestionDetails," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
             $qtype = 'multichoice';
         }
+        print_r("question:",$questionSections);
         $q = $qformat->readquestion($questionSections);    
-        echo "  qtype". $qtype;
         // Check if question is valid.
         if (!$q) {
+            echo "in question read fail";
             return false;
         }
         $q->category = $category->id;
@@ -216,26 +202,32 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         $q->questiontextformat = 1;
 
         // Set default values for essay question type fields
-        if ($qtype === 'essay') {
+        if ($qtype == 'essay') {
+            echo "essay111";
             $q->responseformat = 'editor';
             $q->responserequired = 1;
             $q->responsefieldlines = 15;
             $q->minwordlimit = 0;
-            $q->maxwordlimit = 0;
+            $q->maxwordlimit = 1000;
             $q->attachments = 0;
             $q->attachmentsrequired = 0;
             $q->filetypeslist = '';
-            $q->maxbytes = 0;
+            $q->maxbytes = 10000;
             $q->graderinfo = array('text' => '', 'format' => FORMAT_HTML);
             $q->responsetemplate = array('text' => '', 'format' => FORMAT_HTML);
         }
 
         $created = question_bank::get_qtype($qtype)->save_question($q, $q);
+        echo "created obj\n";
         $createdquestions[] = $created;
     }
-    if ($created) {
+    echo "done create\n";
+    print_r($createdquestions);
+    if (count($createdquestions) > 0) {
+        echo "success\n";
         return $createdquestions;
     } else {
+        echo "fail to create quewstions\n";
         return false;
     }
 }

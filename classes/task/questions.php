@@ -51,7 +51,6 @@ class questions
         //$data = $this->get_custom_data();
         $courseid = $data->courseid;
         $category = $data->category;
-        $story = $data->story;
         $userid = $data->userid;
         $uniqid = $data->uniqid;
         //exam section
@@ -87,7 +86,7 @@ class questions
         echo "[local_aiquestions] Creating Questions via OpenAI...\n";
         echo "[local_aiquestions] Try $i of $numoftries...\n";
 
-        while (!$created && $i <= $numoftries) {
+        while (!$created && $i <= 1) {
 
             // First update DB on tries.
             $update->id = $inserted;
@@ -112,6 +111,7 @@ class questions
 
                     // Create the questions, return an array of objetcs of the created questions.
                     $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions, $userid);
+                    echo   "return from create questions" . $created;
                     $j = 0;
                     foreach ($created as $question) {
                         $success[$j]['id'] = $question->id;
