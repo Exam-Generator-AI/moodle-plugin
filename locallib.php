@@ -186,11 +186,9 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         if(count($questionSections) > 4  && str_contains($extraQuestionDetails," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
             $qtype = 'multichoice';
         }
-        print_r("question:",$questionSections);
         $q = $qformat->readquestion($questionSections);    
         // Check if question is valid.
         if (!$q) {
-            echo "in question read fail";
             return false;
         }
         $q->category = $category->id;
@@ -203,7 +201,6 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
 
         // Set default values for essay question type fields
         if ($qtype == 'essay') {
-            echo "essay111";
             $q->responseformat = 'editor';
             $q->responserequired = 1;
             $q->responsefieldlines = 15;
@@ -218,16 +215,11 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         }
 
         $created = question_bank::get_qtype($qtype)->save_question($q, $q);
-        echo "created obj\n";
         $createdquestions[] = $created;
     }
-    echo "done create\n";
-    print_r($createdquestions);
     if (count($createdquestions) > 0) {
-        echo "success\n";
         return $createdquestions;
     } else {
-        echo "fail to create quewstions\n";
         return false;
     }
 }
