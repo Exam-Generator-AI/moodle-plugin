@@ -111,23 +111,26 @@ class questions
 
                     // Create the questions, return an array of objetcs of the created questions.
                     $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions, $userid);
-                    echo   "return from create questions" . $created;
-                    $j = 0;
-                    foreach ($created as $question) {
-                        $success[$j]['id'] = $question->id;
-                        $success[$j]['questiontext'] = $question->questiontext;
-                        $j++;
-                    }
+                    if ($created === false){ 
+                         echo "something went wrong cannot create all questions";
+                    } else { //all questions inserted to the question bank
+                        $j = 0;
+                        foreach ($created as $question) {
+                            $success[$j]['id'] = $question->id;
+                            $success[$j]['questiontext'] = $question->questiontext;
+                            $j++;
+                        }
 
-                    echo "[local_aiquestions] Successfully created $j questions!\n";
+                        echo "[local_aiquestions] Successfully created $j questions!\n";
 
-                    // Insert success creation info to DB.
-                    $update->id = $inserted;
-                    $update->gift = $questions->text;
-                    $update->tries = $i;
-                    $update->success = json_encode(array_values($success));
-                    $update->datemodified = time();
-                    $DB->update_record('local_aiquestions', $update);
+                        // Insert success creation info to DB.
+                        $update->id = $inserted;
+                        $update->gift = $questions->text;
+                        $update->tries = $i;
+                        $update->success = json_encode(array_values($success));
+                        $update->datemodified = time();
+                        $DB->update_record('local_aiquestions', $update);
+                }
                 // }
             } else {
                 echo "[local_aiquestions] Error: No question text returned \n";
