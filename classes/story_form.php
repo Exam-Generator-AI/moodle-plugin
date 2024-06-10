@@ -24,6 +24,7 @@
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->libdir . '/pdflib.php'); // For PDF handling
+use Smalot\PdfParser\Parser;
 use PhpOffice\PhpPresentation\IOFactory;
 
 /**
@@ -42,8 +43,11 @@ class local_aiquestions_story_form extends moodleform
         global $courseid;
         $mform = $this->_form;
 
-        // Add some CSS to improve the UI
+        // Include necessary scripts and styles for the form.
         $mform->addElement('html', '
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.6.1/pptxgen.min.js"></script>
             <style>
                 .mform .fitem .fitemtitle {
                     width: 20%;
@@ -120,8 +124,9 @@ class local_aiquestions_story_form extends moodleform
             range(0, 10)
         );
         $mform->setType('numofmultiplechoicequestions', PARAM_INT);
+        $mform->setDefault('numofmultiplechoicequestions', 3); // Set default value
 
-        // JavaScript for validation.
+        // JavaScript for validation and auto-adjustment.
         $mform->addElement('html', '
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
@@ -141,6 +146,13 @@ class local_aiquestions_story_form extends moodleform
                                 numofmultiplechoicequestions.value = 10 - openQuestions;
                             }
                             alert("The total number of open and multiple choice questions cannot exceed 10. Adjusted the number automatically.");
+                        } else if (totalQuestions == 0) {
+                            if (this === numofopenquestions) {
+                                numofopenquestions.value = 1;
+                            } else {
+                                numofmultiplechoicequestions.value = 1;
+                            }
+                            alert("The total number of open and multiple choice questions cannot be 0. Adjusted the number automatically.");
                         }
                     }
 
@@ -149,7 +161,6 @@ class local_aiquestions_story_form extends moodleform
                 });
             </script>
         ');
-
 
         // Language.
         $languages = ['English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi", 'Spanish' => 'Spanish', 'German' => "German", 'French' => "French", 'Russian' => "Russian", 'Arabic' => "Arabic"];
@@ -172,56 +183,129 @@ class local_aiquestions_story_form extends moodleform
         $mform->setType('field', PARAM_RAW);
 
         // Container for dynamically changing input field.
-        $mform->addElement('html','<div class="dynamic-field-container"></div>');
+        $mform->addElement('html', '<div class="dynamic-field-container"></div>');
 
-    // Add a hidden input field to hold the extracted text content
-    $mform->addElement('hidden', 'textinput');
-    $mform->setType('textinput', PARAM_RAW);
+        // Add a hidden input field to hold the extracted text content
+        $mform->addElement('hidden', 'textinput');
+        $mform->setType('textinput', PARAM_RAW);
 
-    // Modify the JavaScript to handle file upload and extract text content
-    $mform->addElement('html', '
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {
-                var fieldSelect = document.querySelector("select[name=\'field\']");
-                var fieldInputContainer = document.querySelector(".dynamic-field-container");
-                var extractedTextField = document.querySelector("input[name=\'extractedtext\']");
-
-                function updateFieldInput() {
-                    var selectedValue = fieldSelect.value;
-                    fieldInputContainer.innerHTML = "";
-
-                    if (selectedValue === "Upload file") {
-                        fieldInputContainer.innerHTML = "<input type=\'file\' name=\'uploadedfile\' style=\'width:100%;\' />";
-                    } else {
-                        fieldInputContainer.innerHTML = "<textarea name=\'textinput\' rows=\'4\' cols=\'50\' style=\'width:100%;\'></textarea>";
-                    }
-                }
-
-                function handleFileUpload(event) {
-                    var file = event.target.files[0];
-                    var reader = new FileReader();
-                    reader.onload = function(event) {
-                        extractedTextField.value = event.target.result;
-                    };
-                    reader.readAsText(file);
-                }
-
-                fieldSelect.addEventListener("change", updateFieldInput);
-                fieldInputContainer.addEventListener("change", handleFileUpload);
-                updateFieldInput(); // Initial call to set the correct input
-            });
-        </script>
-    ');
-
-        // Add CSS to style the elements
+        // JavaScript to handle file upload and extract text content
         $mform->addElement('html', '
-            <style>
-                .mform .dynamic-field-container {
-                    margin-top: 10px;
-                    margin-left: 27%;
-                    width: 75%; /* Set width to match the dropdown */
-                }
-            </style>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    var fieldSelect = document.querySelector("select[name=\'field\']");
+                    var fieldInputContainer = document.querySelector(".dynamic-field-container");
+                    var textAreaField = document.createElement("textarea");
+                    textAreaField.name = "textinput";
+                    textAreaField.rows = 4;
+                    textAreaField.cols = 50;
+                    textAreaField.style.width = "100%";
+                    
+                    // Create a hidden form to handle the file upload
+                    var uploadForm = document.createElement("form");
+                    uploadForm.method = "post";
+                    uploadForm.enctype = "multipart/form-data";
+                    uploadForm.style.display = "none";
+                    document.body.appendChild(uploadForm);
+
+                    function updateFieldInput() {
+                        var selectedValue = fieldSelect.value;
+                        fieldInputContainer.innerHTML = "";
+
+                        if (selectedValue === "Upload file") {
+                            var fileInput = document.createElement("input");
+                            fileInput.type = "file";
+                            fileInput.name = "uploadedfile";
+                            fileInput.style.width = "100%";
+                            fileInput.addEventListener("change", handleFileUpload);
+                            fieldInputContainer.appendChild(fileInput);
+
+                            // Append file input to hidden form
+                            uploadForm.appendChild(fileInput);
+                        } else {
+                            fieldInputContainer.appendChild(textAreaField);
+                        }
+                    }
+
+                    async function handleFileUpload(event) {
+                        var file = event.target.files[0];
+
+                        if (!file) return;
+
+                        var reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            var fileContent = e.target.result;
+
+                            // Process the file content based on the file type
+                            var fileType = file.type;
+
+                            if (fileType === "application/pdf") {
+                                extractTextFromPDF(fileContent);
+                            } else if (fileType.includes("powerpoint")) {
+                                extractTextFromPPT(fileContent);
+                            } else if (fileType.includes("text")) {
+                                textAreaField.value = fileContent;
+                            } else {
+                                alert("Unsupported file type");
+                            }
+                        };
+
+                        if (file.type.includes("pdf")) {
+                            reader.readAsArrayBuffer(file);
+                        } else {
+                            reader.readAsText(file);
+                        }
+                    }
+
+                    function extractTextFromPDF(pdfContent) {
+                        pdfjsLib.getDocument({data: pdfContent}).promise.then(function(pdf) {
+                            var totalText = "";
+                            var loadPagePromises = [];
+
+                            for (var i = 1; i <= pdf.numPages; i++) {
+                                loadPagePromises.push(
+                                    pdf.getPage(i).then(function(page) {
+                                        return page.getTextContent().then(function(textContent) {
+                                            var pageText = textContent.items.map(function(item) {
+                                                return item.str;
+                                            }).join(" ");
+                                            totalText += pageText + "\n";
+                                        });
+                                    })
+                                );
+                            }
+
+                            Promise.all(loadPagePromises).then(function() {
+                                textAreaField.value = totalText;
+                            });
+                        });
+                    }
+
+                    function extractTextFromPPT(pptContent) {
+                        var zip = new JSZip();
+                        zip.loadAsync(pptContent).then(function(zip) {
+                            var totalText = "";
+                            var loadSlidePromises = [];
+
+                            zip.folder("ppt/slides").forEach(function(relativePath, file) {
+                                loadSlidePromises.push(
+                                    file.async("text").then(function(textContent) {
+                                        totalText += textContent + "\n";
+                                    })
+                                );
+                            });
+
+                            Promise.all(loadSlidePromises).then(function() {
+                                textAreaField.value = totalText;
+                            });
+                        });
+                    }
+
+                    updateFieldInput();
+                    fieldSelect.addEventListener("change", updateFieldInput);
+                });
+            </script>
         ');
 
         // Question level.
@@ -252,112 +336,22 @@ class local_aiquestions_story_form extends moodleform
             ['multiple' => true, 'size' => 3]
         );
         $select->setMultiple(true);
-        
+
         // Courseid.
         $mform->addElement('hidden', 'courseid', $courseid);
         $mform->setType('courseid', PARAM_INT);
 
-        // Buttons.
-        $buttonarray = [];
-        $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('generate', 'local_aiquestions'));
-        $buttonarray[] = &$mform->createElement('cancel', 'cancel', get_string('backtocourse', 'local_aiquestions'));
-        $mform->addGroup($buttonarray, 'buttonar', '', [' '], false);
+        // Buttons to submit or cancel the form.
+        $this->add_action_buttons(true, 'Generate Questions');
     }
 
     /**
-     * Handle file upload and extract text content
-     *
-     * @param array $data
-     * @param array $files
-     * @return string|null
-     */
-    public function handle_file_upload($data, $files)
-    {
-        if (isset($files['uploadedfile']) && $files['uploadedfile']['error'] === UPLOAD_ERR_OK) {
-            $file = $files['uploadedfile'];
-            $fileext = pathinfo($file['name'], PATHINFO_EXTENSION);
-
-            if ($fileext === 'pdf') {
-                return $this->read_pdf($file['tmp_name']);
-            } elseif ($fileext === 'pptx') {
-                return $this->read_pptx($file['tmp_name']);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Placeholder function to read PDF content
-     *
-     * @param string $filepath
-     * @return string
-     */
-    private function read_pdf($filepath)
-    {
-        require_once($CFG->libdir . '/pdflib.php');
-    
-        $pdf = new \TCPDF();
-        $text = '';
-    
-        $pageCount = $pdf->setSourceFile($filepath);
-        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-            $pageId = $pdf->importPage($pageNo);
-            $pdf->useTemplate($pageId);
-            $text .= $pdf->getPageContent($pageNo);
-        }
-    
-        return $text;
-    }
-
-    /**
-     * Function to read PPTX content using PhpPresentation
-     *
-     * @param string $filepath
-     * @return string
-     */
-    private function read_pptx($filepath)
-    {
-        $pptReader = IOFactory::createReader('PowerPoint2007');
-        $presentation = $pptReader->load($filepath);
-        $text = '';
-
-        foreach ($presentation->getAllSlides() as $slide) {
-            foreach ($slide->getShapeCollection() as $shape) {
-                if ($shape instanceof \PhpOffice\PhpPresentation\Shape\RichText) {
-                    foreach ($shape->getParagraphs() as $paragraph) {
-                        $text .= $paragraph->getText() . ' ';
-                    }
-                }
-            }
-        }
-        return $text;
-    }
-    /**
-     * Form validation
-     *
-     * @param array $data
-     * @param array $files
+     * Custom validation should be added here
+     * @param array $data, array $files
      * @return array
      */
     public function validation($data, $files)
     {
-        $errors = [];
-        $totalquestions = $data['numofopenquestions'] + $data['numofmultiplechoicequestions'];
-        if ($totalquestions > 10) {
-            $errors['numofopenquestions'] = get_string('exceedstotalquestions', 'local_aiquestions');
-            $errors['numofmultiplechoicequestions'] = get_string('exceedstotalquestions', 'local_aiquestions');
-        }
-        return $errors;
-    }
-    public function InputValidation($data, $files)
-    {   
-        $errors = parent::InputValidation($data, $files);
-
-        // Check if the extracted text content is not null
-        if (empty($data['textinput']) && empty($data['extractedtext'])) {
-            $errors['textinput'] = get_string('missingtext', 'local_aiquestions');
-        }
-
-        return $errors;
+        return array();
     }
 }

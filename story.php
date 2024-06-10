@@ -64,6 +64,28 @@ if ($mform->is_cancelled()) {
         $instructions = 'instructions' . $preset;
         $example = 'example' . $preset;
 
+            // Process the form data
+    $textinput = '';
+    print_r($_FILES);
+    // Check if a file was uploaded and extract its content if present
+    if (isset($_FILES['uploadedfile']) && $_FILES['uploadedfile']['error'] == 0) {
+        $uploadedFile = $_FILES['uploadedfile'];
+        print_r($uploadedFile);
+        $fileExt = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
+        echo $fileExt;
+        if ($fileExt == 'pdf') {
+            // Handle PDF extraction
+            require_once('pdfparser.php'); // Assuming you have a custom PDF parser or library
+            $textinput = extract_text_from_pdf($uploadedFile['tmp_name']);
+        } elseif ($fileExt == 'pptx') {
+            // Handle PPTX extraction
+            require_once('pptxparser.php'); // Assuming you have a custom PPTX parser or library
+            $textinput = extract_text_from_pptx($uploadedFile['tmp_name']);
+        }
+    } else {
+        // Use the text input provided directly
+        $textinput = $data->textinput;
+    }
             // Handle file upload and extract text content
         //$extractedText = $mform->handle_file_upload($data, $_FILES);
         //if (!empty($extractedText)) {
@@ -81,7 +103,7 @@ if ($mform->is_cancelled()) {
             'field' => $data->field,
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
-            'textinput' => $data->textinput
+            'textinput' =>  $data->textinput
         ];
 
       $task->execute($data);

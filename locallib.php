@@ -40,7 +40,7 @@ function local_aiquestions_get_questions($data) {
     global $CFG;
 
     $key = "123456"; // TODO: Change this to the actual key
-    $url = 'http://host.docker.internal:5000/generate/exam/mock'; // Change this to sync route
+    $url = 'http://host.docker.internal:5000/generate/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
     // Extract the parameters from the $data object
@@ -165,12 +165,13 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
             $category = question_make_default_categories($contexts->all());
         }
     }
-
+    
     // Split questions based on blank lines.
     // Then loop through each question and create it.
     $questions = explode("\n\n", $gift);
 
     echo "question number from exam- ". count($questions)."num of question". $numofquestions;
+    
 
     // if (count($questions) != $numofquestions) {
     //     return false;
@@ -186,7 +187,9 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         if(count($questionSections) > 4  && str_contains($extraQuestionDetails," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
             $qtype = 'multichoice';
         }
-        print_r("question:",$questionSections);
+        //print_r("question:",$questionSections);
+        print_r($USER);
+        
         $q = $qformat->readquestion($questionSections);    
         // Check if question is valid.
         if (!$q) {
@@ -277,5 +280,58 @@ function local_aiquestions_check_gift($gift) {
         }
     }
     return true;
+}
+
+use Smalot\PdfParser\Parser;
+use PhpOffice\PhpPresentation\IOFactory;
+
+function extract_text_from_pdf($filepath) {
+    try {
+        $parser = new Parser();
+        $pdf = $parser->parseFile($filepath);
+        $text = $pdf->getText();
+        $text = str_replace("\n", " ", $text);
+        
+        $numPages = count($pdf->getPages());
+        error_log("PDF file processed with $numPages pages. Text length: " . strlen($text));
+
+        return $text;
+
+    } catch (Exception $e) {
+        error_log("Error processing PDF file: " . $e->getMessage());
+        return null;
+    }
+}
+
+function extract_text_from_pptx($filepath) {
+    try {
+        $pptReader = IOFactory::createReader('PowerPoint2007');
+        $presentation = $pptReader->load($filepath);
+
+        $textContent = '';
+        $numSlides = 0;
+
+        foreach ($presentation->getAllSlides() as $slide) {
+            $numSlides++;
+            foreach ($slide->getShapeCollection() as $shape) {
+                if ($shape instanceof \PhpOffice\PhpPresentation\Shape\RichText) {
+                    foreach ($shape->getParagraphs() as $paragraph) {
+                        foreach ($paragraph->getLines() as $line) {
+                            $textContent .= $line->getText() . ' ';
+                        }
+                    }
+                }
+            }
+        }
+
+        $textContent = str_replace("\n", " ", $textContent);
+        error_log("PPTX file processed with $numSlides slides. Text length: " . strlen($textContent));
+
+        return $textContent;
+
+    } catch (Exception $e) {
+        error_log("Error processing PPTX file: " . $e->getMessage());
+        return null;
+    }
 }
 ?>
