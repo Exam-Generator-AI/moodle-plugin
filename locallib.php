@@ -36,10 +36,46 @@
  * @return object Questions of generated questions
  * @throws Exception if the request fails
  */
-function local_aiquestions_get_questions($data) {
-    global $CFG;
+function get_auth_token($data) {
+    global $USER;
+    $key = get_config('local_aiquestions', 'key'); // TODO: Change this to the actual key
+    echo "key: ". $key;
+    $url = 'http://host.docker.internal:5000/api/auth/external'; // Change this to sync route
+    $authorization = "X-API-KEY:" . $key;
 
-    $key = "123456"; // TODO: Change this to the actual key
+    $data = '{
+        "email": "'. $USER->email .'"
+    }';
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
+
+
+    // Execute the request and wait for the response
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Close the cURL session
+    curl_close($ch);
+
+    // Decode the response
+    $result = json_decode($response);
+
+    // Check if the response is valid
+    if ($httpCode !== 200) {
+        return False;
+    }
+    return true;
+
+    }
+function local_aiquestions_get_questions($data) {
+    global $CFG, $USER;
+
+    $key = get_config('local_aiquestions', 'key');
     $url = 'http://host.docker.internal:5000/generate/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
@@ -76,7 +112,7 @@ function local_aiquestions_get_questions($data) {
     $data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'"
+        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'", "email": "'. $USER->email .'"
     }';
 
     // Initialize cURL
@@ -113,6 +149,10 @@ function local_aiquestions_get_questions($data) {
     $result = json_decode($response);
 
     // Check if the response is valid
+    if ($httpCode === 401){
+        get_auth_token($data);
+        return local_aiquestions_get_questions($data);
+    }
     if ($httpCode !== 200 || $result === null) {
         echo "<script>console.log('Invalid response received from exam server: $response');</script>";
         throw new Exception("Invalid response received from exam server");

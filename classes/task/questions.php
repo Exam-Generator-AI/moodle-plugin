@@ -42,7 +42,7 @@ class questions
      */
     public function execute($data)
     {
-        global $DB, $CFG, $_FILES;
+        global $DB, $CFG, $_FILES, $_USER;
         require_once(__DIR__ . '/../../locallib.php');
         // Read numoftries from settings.
         $numoftries = get_config('local_aiquestions', 'numoftries');
@@ -82,7 +82,9 @@ class questions
         $i = 1;
         $error = ''; // Error message.
         $update = new \stdClass();
-        print_r($_FILES['uploadedfile']);
+
+        $api_key = get_config('local_aiquestions', 'key');
+        echo "api_key:" . $api_key;
         echo "[local_aiquestions] Creating Questions via OpenAI...\n";
         echo "[local_aiquestions] Try $i of $numoftries...\n";
 

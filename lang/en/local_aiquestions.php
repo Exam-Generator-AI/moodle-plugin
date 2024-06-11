@@ -33,7 +33,7 @@ $string['privacy:metadata'] = 'AI text to questions generator does not store any
 $string['aiquestions'] = 'AI Questions';
 
 // Settings page.
-$string['openaikey'] = 'OpenAI API key';
+$string['openaikey'] = 'StudyWise API key';
 $string['openaikeydesc'] = 'You can get your API key from <a href="https://platform.openai.com/account/api-keys">https://platform.openai.com/account/api-keys</a><br>
 Select the "+ Create New Secret Key" button and copy the key to this field.<br>
 Note that you need to have an OpenAI account that include billing settings to get an API key.';

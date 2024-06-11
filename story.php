@@ -132,5 +132,31 @@ if ($mform->is_cancelled()) {
     $mform->display();
 }
 
+function make_authenticated_request($endpoint, $data) {
+    global $SESSION;
+
+    if (empty($SESSION->jwttoken)) {
+        throw new moodle_exception('nojwttoken', 'local_aiquestions');
+    }
+
+    $api_url = 'https://api.example.com' . $endpoint; // Replace with your API base URL
+    $options = array(
+        'http' => array(
+            'header'  => "Authorization: Bearer " . $SESSION->jwttoken . "\r\n" .
+                         "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($data),
+        ),
+    );
+    
+    $context  = stream_context_create($options);
+    $result = file_get_contents($api_url, false, $context);
+    
+    if ($result === FALSE) {
+        throw new moodle_exception('apirequestfailed', 'local_aiquestions');
+    }
+    
+    return json_decode($result, true);
+}
 echo $OUTPUT->footer();
 ?>
