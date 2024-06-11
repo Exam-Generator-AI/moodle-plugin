@@ -197,6 +197,7 @@ class local_aiquestions_story_form extends moodleform
                     var fieldInputContainer = document.querySelector(".dynamic-field-container");
                     var textAreaField = document.createElement("textarea");
                     textAreaField.name = "textinput";
+                    textAreaField.id = "textinput";
                     textAreaField.rows = 4;
                     textAreaField.cols = 50;
                     textAreaField.style.width = "100%";

@@ -103,9 +103,7 @@ if ($mform->is_cancelled()) {
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
             'textinput' =>  $data->textinput,
-            'text' => $data->textinput
         ];
-
         $task->execute($data);
         if (isset($questions->text)) {
             // if ($created) {

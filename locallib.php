@@ -71,16 +71,16 @@ function get_auth_token($data) {
     if ($httpCode !== 200) {
         return False;
     }
-    return true;
+    return $result;
 
     }
-function local_aiquestions_get_questions($data) {
+function local_aiquestions_get_questions($data,$access_token='') {
     global $CFG, $USER;
 
-    $key = get_config('local_aiquestions', 'key');
     $url = 'http://host.docker.internal:5000/api/v1/gen/exam/sync'; // Change this to sync route
-    $authorization = "Authorization: Bearer " . $key;
+    $authorization = "Authorization: Bearer " . $access_token;
 
+    echo "access_token",$access_token;
     // Extract the parameters from the $data object
     //$story = str_replace(["\n", "\r"], " ", $data->story);
     //$instructions = str_replace(["\n", "\r"], " ", $data->instructions);
@@ -111,20 +111,23 @@ function local_aiquestions_get_questions($data) {
 
 
       
-    $data = '{
+    $exam_data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'"
+        "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'"},"levelQuestions": "'. $levelQuestions .'"
     }';
+
+    print_r($exam_data);
 
     // Initialize cURL
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $exam_data);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
+
 
     // Print message before sending the request
     mtrace("Sending request to exam server...");
@@ -150,12 +153,14 @@ function local_aiquestions_get_questions($data) {
     // Decode the response
     $result = json_decode($response);
     echo "status" . $httpCode;
-    print_r($result);
     // Check if the response is valid
-    if ($httpCode === 401 || $httpCode === 422){
+    if ($httpCode === 401 || $httpCode === 422){ //check why exam server return 422
         echo "login with api key";
-        get_auth_token($data);
-        return local_aiquestions_get_questions($data);
+        $res = get_auth_token($data);
+        if($res === false){
+            throw new Exception("Cant authenticate to exam server");
+        }
+        return local_aiquestions_get_questions($data,$res->access_token);
     }
     if ($httpCode !== 200 || $result === null) {
         echo "<script>console.log('Invalid response received from exam server: $response');</script>";
