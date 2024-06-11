@@ -40,7 +40,7 @@ function get_auth_token($data) {
     global $USER;
     $key = get_config('local_aiquestions', 'key'); // TODO: Change this to the actual key
     echo "key: ". $key;
-    $url = 'http://host.docker.internal:5000/api/auth/external'; // Change this to sync route
+    $url = 'http://host.docker.internal:5000/api/v1/auth/external'; // Change this to sync route
     $authorization = "X-API-KEY:" . $key;
 
     $data = '{
@@ -65,6 +65,8 @@ function get_auth_token($data) {
     // Decode the response
     $result = json_decode($response);
 
+    echo "result fro exam" . $httpCode;
+
     // Check if the response is valid
     if ($httpCode !== 200) {
         return False;
@@ -76,7 +78,7 @@ function local_aiquestions_get_questions($data) {
     global $CFG, $USER;
 
     $key = get_config('local_aiquestions', 'key');
-    $url = 'http://host.docker.internal:5000/generate/exam/sync'; // Change this to sync route
+    $url = 'http://host.docker.internal:5000/api/v1/gen/exam/sync'; // Change this to sync route
     $authorization = "Authorization: Bearer " . $key;
 
     // Extract the parameters from the $data object
@@ -112,7 +114,7 @@ function local_aiquestions_get_questions($data) {
     $data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'", "email": "'. $USER->email .'"
+        "questions": {"multiple_choice": '. $multipleQuestions .',"open_questions": '. $numofopenquestions .'},"levelQuestions": "'. $levelQuestions .'"
     }';
 
     // Initialize cURL
@@ -147,9 +149,11 @@ function local_aiquestions_get_questions($data) {
 
     // Decode the response
     $result = json_decode($response);
-
+    echo "status" . $httpCode;
+    print_r($result);
     // Check if the response is valid
-    if ($httpCode === 401){
+    if ($httpCode === 401 || $httpCode === 422){
+        echo "login with api key";
         get_auth_token($data);
         return local_aiquestions_get_questions($data);
     }

@@ -54,7 +54,7 @@ class questions
         $userid = $data->userid;
         $uniqid = $data->uniqid;
         //exam section
-        $numofquestions = $data->numofquestions;
+        $numofquestions = $data->numofopenquestions;
         $text = $data->text;
         $skills = $data->skills;
         $questionLevel = $data->questionLevel;

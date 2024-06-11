@@ -61,12 +61,11 @@ if ($mform->is_cancelled()) {
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
-        $instructions = 'instructions' . $preset;
-        $example = 'example' . $preset;
+        // $instructions = 'instructions' . $preset;
+        // $example = 'example' . $preset;
 
             // Process the form data
     $textinput = '';
-    print_r($_FILES);
     // Check if a file was uploaded and extract its content if present
     if (isset($_FILES['uploadedfile']) && $_FILES['uploadedfile']['error'] == 0) {
         $uploadedFile = $_FILES['uploadedfile'];
@@ -103,10 +102,11 @@ if ($mform->is_cancelled()) {
             'field' => $data->field,
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
-            'textinput' =>  $data->textinput
+            'textinput' =>  $data->textinput,
+            'text' => $data->textinput
         ];
 
-      $task->execute($data);
+        $task->execute($data);
         if (isset($questions->text)) {
             // if ($created) {
             //     echo "[local_aiquestions] Successfully created questions!";
