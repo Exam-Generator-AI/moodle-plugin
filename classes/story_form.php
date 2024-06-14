@@ -115,6 +115,15 @@ class local_aiquestions_story_form extends moodleform
             range(0, 10)
         );
         $mform->setType('numofopenquestions', PARAM_INT);
+        
+        // Number of gap questions.
+        $mform->addElement(
+            'select',
+            'numofblankquestions',
+            'Number of fill the blank questions',
+            range(0, 10)
+        );
+        $mform->setType('numofblankquestions', PARAM_INT);
 
         // Number of multiple choice questions.
         $mform->addElement(
@@ -131,26 +140,32 @@ class local_aiquestions_story_form extends moodleform
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
                     var numofopenquestions = document.querySelector("select[name=\'numofopenquestions\']");
+                    var numofblankquestions = document.querySelector("select[name=\'numofblankquestions\']");
                     var numofmultiplechoicequestions = document.querySelector("select[name=\'numofmultiplechoicequestions\']");
                     var form = document.querySelector("form");
 
                     function validateTotalQuestions() {
                         var openQuestions = parseInt(numofopenquestions.value);
                         var multipleChoiceQuestions = parseInt(numofmultiplechoicequestions.value);
-                        var totalQuestions = openQuestions + multipleChoiceQuestions;
+                        var fillBlankquestionsQuestions = parseInt(numofblankquestions.value);
+                        var totalQuestions = openQuestions + multipleChoiceQuestions + fillBlankquestionsQuestions;
 
                         if (totalQuestions > 10) {
                             if (this === numofopenquestions) {
                                 numofopenquestions.value = 10 - multipleChoiceQuestions;
-                            } else {
+                            } else if (this === numofmultiplechoicequestions) {
                                 numofmultiplechoicequestions.value = 10 - openQuestions;
+                            } else if (this === numofblankquestions){
+                                numofblankquestions.value = 10 - fillBlankquestionsQuestions;
                             }
                             alert("The total number of open and multiple choice questions cannot exceed 10. Adjusted the number automatically.");
                         } else if (totalQuestions == 0) {
                             if (this === numofopenquestions) {
                                 numofopenquestions.value = 1;
-                            } else {
+                            } else if (this === numofmultiplechoicequestions) {
                                 numofmultiplechoicequestions.value = 1;
+                            } else if (this === numofblankquestions){
+                                numofblankquestions.value = 1;
                             }
                             alert("The total number of open and multiple choice questions cannot be 0. Adjusted the number automatically.");
                         }
@@ -158,6 +173,8 @@ class local_aiquestions_story_form extends moodleform
 
                     numofopenquestions.addEventListener("change", validateTotalQuestions);
                     numofmultiplechoicequestions.addEventListener("change", validateTotalQuestions);
+                    numofblankquestions.addEventListener("change", validateTotalQuestions);
+
                 });
             </script>
         ');

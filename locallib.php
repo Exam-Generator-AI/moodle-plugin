@@ -101,6 +101,7 @@ function local_aiquestions_get_questions($data,$access_token='') {
     // $examTags = $data->skills;//TODO: fix skills to send Ids
     $examTags = [];
     $numofopenquestions = $data->numofopenquestions;
+    $numsofblankquestions = $data->numsofblankquestions;
     $multipleQuestions = $data->numofmultiplechoicequestions;
     $examLanguage = $data->examLanguage;
     $field = $data->field;
@@ -114,7 +115,7 @@ function local_aiquestions_get_questions($data,$access_token='') {
     $exam_data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'"},"levelQuestions": "'. $levelQuestions .'"
+        "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'","fill_in_the_blank": '. $numsofblankquestions. '},"levelQuestions": "'. $levelQuestions .'"
     }';
 
     print_r($exam_data);
@@ -196,6 +197,8 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     require_once($CFG->dirroot . '/question/format.php');
     require_once($CFG->dirroot . '/question/format/gift/format.php');
 
+    $qtypeMap = array("multiple_choice"=>"multichoice","fill_in_the_blank"=>"match","open_questions"=>"essay");
+
     $qformat = new \qformat_gift();
     $coursecontext = \context_course::instance($courseid);
 
@@ -228,15 +231,16 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     $createdquestions = []; // Array of objects of created questions.
     foreach ($questions as $question) {
         $questionSections = explode("\n", $question);
-
-        // Manipulating question text manually for question text field.
-        $extraQuestionDetails = explode('{', $question)[1];
-        $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[0]));
-        $qtype = 'essay';
-        if(count($questionSections) > 4  && str_contains($extraQuestionDetails," ~ ")) { //check there are more than 4 section in the question indicate multiple choise and check for ~ indicate options in the question
-            $qtype = 'multichoice';
+        echo "obj".$questionSections[0]." ". str_replace("//","",$questionSections[0]). " ". trim(str_replace("//","",$questionSections[0]));
+        $qtype = $qtypeMap[trim(str_replace("//","",$questionSections[0]))];
+        if (empty($qtype)) {
+            echo "fail finding qtype\n";
+            return false;
         }
-        //print_r("question:",$questionSections);
+        echo "qtype".$qtype."\n\n";
+            
+        $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[1]));
+
         print_r($USER);
         
         $q = $qformat->readquestion($questionSections);    
@@ -255,7 +259,6 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
 
         // Set default values for essay question type fields
         if ($qtype == 'essay') {
-            echo "essay111";
             $q->responseformat = 'editor';
             $q->responserequired = 1;
             $q->responsefieldlines = 15;
@@ -267,7 +270,8 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
             $q->maxbytes = 10000;
             $q->graderinfo = array('text' => '', 'format' => FORMAT_HTML);
             $q->responsetemplate = array('text' => '', 'format' => FORMAT_HTML);
-        }
+        } 
+
 
         $created = question_bank::get_qtype($qtype)->save_question($q, $q);
         echo "created obj\n";
@@ -279,7 +283,7 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         echo "success\n";
         return $createdquestions;
     } else {
-        echo "fail to create quewstions\n";
+        echo "fail to create questions\n";
         return false;
     }
 }

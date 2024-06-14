@@ -94,6 +94,7 @@ if ($mform->is_cancelled()) {
             'category' => $data->category,
             'numofopenquestions' => $data->numofopenquestions,
             'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
+            'numsofblankquestions' => $data->numofblankquestions,
             'courseid' => $data->courseid,
             'userid' => $USER->id,
             'uniqid' => $uniqid,

@@ -112,7 +112,7 @@ class questions
                 // if (\local_aiquestions_check_gift($questions->text)) {
 
                     // Create the questions, return an array of objetcs of the created questions.
-                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions, $userid);
+                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions + $data->numsofblankquestions, $userid);
                     if ($created === false){ 
                          echo "something went wrong cannot create all questions";
                     } else { //all questions inserted to the question bank
