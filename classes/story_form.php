@@ -48,6 +48,7 @@ class local_aiquestions_story_form extends moodleform
             <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.6.1/pptxgen.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
             <style>
                 .mform .fitem .fitemtitle {
                     width: 20%;
@@ -189,7 +190,7 @@ class local_aiquestions_story_form extends moodleform
         );
 
         // Field (exam type).
-        $fieldoptions = ["topic" => "topic", "Text" => "text", "Upload file" => "Upload file", "URL" => "url", "Math" => "math"];
+        $fieldoptions = ["topic" => "topic", "Text" => "text", "file" => "Upload file", "URL" => "url", "Math" => "math"];
         $mform->addElement(
             'select',
             'field',
@@ -200,21 +201,37 @@ class local_aiquestions_story_form extends moodleform
         $mform->setType('field', PARAM_RAW);
 
         // Container for dynamically changing input field.
-        $mform->addElement('html', '<div class="dynamic-field-container"></div>');
+        $mform->addElement('html', '<div class="dynamic-field-container">
+        </div>');
 
         // Add a hidden input field to hold the extracted text content
-        $mform->addElement('hidden', 'textinput');
+        $mform->addElement('textarea', 'textinput');
         $mform->setType('textinput', PARAM_RAW);
+
+        $mform->addElement(
+            'filepicker',
+            'userfile',
+            "upload file",
+            null,
+            [
+                'maxbytes' => 10000000,
+                'accepted_types' => '*',
+            ]
+        );
+        $mform->setType('userfile', PARAM_FILE);
 
         // JavaScript to handle file upload and extract text content
         $mform->addElement('html', '
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
                     var fieldSelect = document.querySelector("select[name=\'field\']");
+                    var fileSection = document.getElementById("fitem_id_userfile");
                     var fieldInputContainer = document.querySelector(".dynamic-field-container");
-                    var textAreaField = document.createElement("textarea");
-                    textAreaField.name = "textinput";
-                    textAreaField.id = "textinput";
+                    var textAreaField = document.getElementById("id_textinput");
+                    // var textAreaField = document.createElement("textarea");
+
+                    // textAreaField.name = "textField";
+                    // textAreaField.id = "textField";
                     textAreaField.rows = 4;
                     textAreaField.cols = 50;
                     textAreaField.style.width = "100%";
@@ -224,102 +241,24 @@ class local_aiquestions_story_form extends moodleform
                     uploadForm.method = "post";
                     uploadForm.enctype = "multipart/form-data";
                     uploadForm.style.display = "none";
+                    fileSection.style.display = "none";
+
                     document.body.appendChild(uploadForm);
 
                     function updateFieldInput() {
                         var selectedValue = fieldSelect.value;
                         fieldInputContainer.innerHTML = "";
 
-                        if (selectedValue === "Upload file") {
-                            var fileInput = document.createElement("input");
-                            fileInput.type = "file";
-                            fileInput.name = "uploadedfile";
-                            fileInput.style.width = "100%";
-                            fileInput.addEventListener("change", handleFileUpload);
-                            fieldInputContainer.appendChild(fileInput);
-
-                            // Append file input to hidden form
-                            uploadForm.appendChild(fileInput);
+                        if (selectedValue === "file") {
+                            textAreaField.style.display = "none";
+                            fileSection.style.display = "flex";
                         } else {
-                            fieldInputContainer.appendChild(textAreaField);
+                            textAreaField.style.display = "block";
+                            fileSection.style.display = "none";
                         }
                     }
 
-                    async function handleFileUpload(event) {
-                        var file = event.target.files[0];
-
-                        if (!file) return;
-
-                        var reader = new FileReader();
-
-                        reader.onload = function(e) {
-                            var fileContent = e.target.result;
-
-                            // Process the file content based on the file type
-                            var fileType = file.type;
-
-                            if (fileType === "application/pdf") {
-                                extractTextFromPDF(fileContent);
-                            } else if (fileType.includes("powerpoint")) {
-                                extractTextFromPPT(fileContent);
-                            } else if (fileType.includes("text")) {
-                                textAreaField.value = fileContent;
-                            } else {
-                                alert("Unsupported file type");
-                            }
-                        };
-
-                        if (file.type.includes("pdf")) {
-                            reader.readAsArrayBuffer(file);
-                        } else {
-                            reader.readAsText(file);
-                        }
-                    }
-
-                    function extractTextFromPDF(pdfContent) {
-                        pdfjsLib.getDocument({data: pdfContent}).promise.then(function(pdf) {
-                            var totalText = "";
-                            var loadPagePromises = [];
-
-                            for (var i = 1; i <= pdf.numPages; i++) {
-                                loadPagePromises.push(
-                                    pdf.getPage(i).then(function(page) {
-                                        return page.getTextContent().then(function(textContent) {
-                                            var pageText = textContent.items.map(function(item) {
-                                                return item.str;
-                                            }).join(" ");
-                                            totalText += pageText + "\n";
-                                        });
-                                    })
-                                );
-                            }
-
-                            Promise.all(loadPagePromises).then(function() {
-                                textAreaField.value = totalText;
-                            });
-                        });
-                    }
-
-                    function extractTextFromPPT(pptContent) {
-                        var zip = new JSZip();
-                        zip.loadAsync(pptContent).then(function(zip) {
-                            var totalText = "";
-                            var loadSlidePromises = [];
-
-                            zip.folder("ppt/slides").forEach(function(relativePath, file) {
-                                loadSlidePromises.push(
-                                    file.async("text").then(function(textContent) {
-                                        totalText += textContent + "\n";
-                                    })
-                                );
-                            });
-
-                            Promise.all(loadSlidePromises).then(function() {
-                                textAreaField.value = totalText;
-                            });
-                        });
-                    }
-
+                    
                     updateFieldInput();
                     fieldSelect.addEventListener("change", updateFieldInput);
                 });
@@ -361,6 +300,7 @@ class local_aiquestions_story_form extends moodleform
 
         // Buttons to submit or cancel the form.
         $this->add_action_buttons(true, 'Generate Questions');
+
     }
 
     /**

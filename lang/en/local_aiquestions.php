@@ -26,11 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Basics.
-$string['pluginname'] = 'AI text to questions generator';
+$string['pluginname'] = 'Exam Generator';
 $string['pluginname_desc'] = 'This plugin allows you to automatically generate questions from a text using a language AI (eg chatGPT).';
 $string['pluginname_help'] = 'Use this plugin from the course administration menu or the question bank.';
 $string['privacy:metadata'] = 'AI text to questions generator does not store any personal data.';
-$string['aiquestions'] = 'AI Questions';
+$string['aiquestions'] = 'Exam Generator';
 
 // Settings page.
 $string['openaikey'] = 'StudyWise API key';

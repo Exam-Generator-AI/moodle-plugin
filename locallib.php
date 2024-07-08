@@ -36,8 +36,17 @@
  * @return object Questions of generated questions
  * @throws Exception if the request fails
  */
+
+ require_once(__DIR__ . '/../../config.php');
+ print("libdir-".$CFG->libdir);
+// Directly include the filelib.php file
+ require_once(__DIR__ . '/../../lib/filelib.php');
+
+
 function get_auth_token($data) {
-    global $USER;
+    global $USER, $SESSION;
+    require_login();
+
     $key = get_config('local_aiquestions', 'key'); // TODO: Change this to the actual key
     echo "key: ". $key;
     $url = 'http://host.docker.internal:5000/api/v1/auth/external'; // Change this to sync route
@@ -65,37 +74,91 @@ function get_auth_token($data) {
     // Decode the response
     $result = json_decode($response);
 
-    echo "result fro exam" . $httpCode;
+    echo "result from exam" . $httpCode;
 
     // Check if the response is valid
     if ($httpCode !== 200) {
         return False;
     }
-    return $result;
+
+    if (isset($result->access_token)) {
+        # code...
+        $SESSION->access_token = $result->access_token;
+        return $result;
+    }
+    return false;
 
     }
-function local_aiquestions_get_questions($data,$access_token='') {
-    global $CFG, $USER;
 
-    $url = 'http://host.docker.internal:5000/api/v1/gen/exam/sync'; // Change this to sync route
+
+function read_file($fileData,$access_token){
+    print("send file to exam". $fileData->name ."\n");
+    print("path ". $fileData->path . $fileData->name."\n");
+
+    $url = 'http://host.docker.internal:5000/api/v1/exports'; // Change this to sync routex
     $authorization = "Authorization: Bearer " . $access_token;
 
-    echo "access_token",$access_token;
-    // Extract the parameters from the $data object
-    //$story = str_replace(["\n", "\r"], " ", $data->story);
-    //$instructions = str_replace(["\n", "\r"], " ", $data->instructions);
-    //$example = str_replace(["\n", "\r"], " ", $data->example);
+    if (empty($access_token)) {
+        # code...
+        return (object)['response'=>'{}' , 'httpCode'=>401];
+    }
+    echo "mime type - $fileData->mimeType \n\n";
+    if ($fileData->mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+        echo "pptx file \n\n";
+       $url = $url."/pptx/read";
+       $field="pptFile";
+    } else {
+       echo "pdf file \n\n";
+       $url = $url."/pdf/read";
+       $field="pdfFile";
+    }
 
-    // // Prepare the data for the POST request
-    // $postData = json_encode([
-    // 'numofopenquestions' => $data->numofopenquestions,
-    // 'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
-    //     'examFocus' => $data->examFocus,
-    //     'examLanguage' => $data->examLanguage,
-    //     'field' => $data->field,
-    //     'skills' => $data->skills,
-    //     'category' => $data->category
-    // ]);
+    // Create a temporary file
+    $tempDir = make_temp_directory('mytempfiles');
+    $tempFilePath = tempnam($tempDir, 'tempfile_');
+    file_put_contents($tempFilePath, $fileData->content);
+
+    if (function_exists('curl_file_create')) { // php 5.5+
+        $cFile = curl_file_create($tempFilePath, $fileData->mimeType, $fileData->name);
+      } else { // 
+        $cFile = '@' . realpath($tempFilePath);
+      }
+    // cURL initialization
+    $ch = curl_init($url);
+    
+    // cURL options
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [ $authorization]);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    
+    $postData = array(
+        $field => $cFile
+    );
+    
+    // Set cURL options for file upload
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    $result=curl_exec($ch);
+    
+    // Clean up the temporary file
+    if (file_exists($tempFilePath)) {
+        unlink($tempFilePath);
+        echo "Temporary file deleted: $tempFilePath\n";
+    }
+    // Check for cURL errors
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        echo "<script>console.log('cURL error: $error_msg');</script>";
+        throw new Exception("cURL error: $error_msg");
+    }
+    curl_close($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $decode = json_decode($result);
+    return (object)['response'=>$decode->text , 'httpCode'=>$httpCode];
+} 
+function send_exam( $data,$access_token='' ){
+    $url = 'http://host.docker.internal:5000/api/v1/gen/exam/sync'; // Change this to sync routex
+    $authorization = "Authorization: Bearer " . $access_token;
+
     $levelQuestions = $data->questionLevel;
     $text = $data->textinput;
     // $examTags = $data->skills;//TODO: fix skills to send Ids
@@ -110,15 +173,15 @@ function local_aiquestions_get_questions($data,$access_token='') {
     $payload = [];
     $isClosedContent = false;
 
-
-      
+    if (empty($access_token)) {
+        # code...
+        return (object)['response'=>'{}' , 'httpCode'=>401];
+    }
     $exam_data = '{
         "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
         "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
         "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'","fill_in_the_blank": '. $numsofblankquestions. '},"levelQuestions": "'. $levelQuestions .'"
     }';
-
-    print_r($exam_data);
 
     // Initialize cURL
     $ch = curl_init($url);
@@ -133,48 +196,73 @@ function local_aiquestions_get_questions($data,$access_token='') {
     // Print message before sending the request
     mtrace("Sending request to exam server...");
 
+    // Check for cURL errors
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        echo "<script>console.log('cURL error: $error_msg');</script>";
+        throw new Exception("cURL error: $error_msg");
+    }
     // Execute the request and wait for the response
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+    echo $httpCode;
+    curl_close($ch);
+
+    return (object)['response'=>json_decode($response) , 'httpCode'=>$httpCode];
+}
+
+function local_aiquestions_get_questions($data,$tries = 3) {
+    global $CFG, $USER,$SESSION;
+
+    if ($tries == 0) {
+        throw new Exception("Cant authenticate to exam server");
+    }
+    $retrieved_token='';
+    if (isset($SESSION->access_token)) {
+        $retrieved_token = $SESSION->access_token;
+    } else {
+        $res = get_auth_token($data);
+        if ($res === false) {
+            # code...
+            throw new Exception("Cant authenticate to exam server");
+        }
+        local_aiquestions_get_questions($data,$tries-1);
+    }
+    if ($data->field == 'file' && isset($data->fileDetails)) {
+        $res= read_file($data->fileDetails,$retrieved_token);
+        if ($res->httpCode == 200) {
+            # code...
+            $data->textinput = $res->response;
+            $res = send_exam($data,$retrieved_token);
+        }
+    } else {
+        $res = send_exam($data,$retrieved_token);
+    }
+
+    $httpCode = $res->httpCode;
+    $response = $res->response;
+
+
     // Print message after receiving the response
     mtrace("<script>console.log('Received response from exam server.');</script>");
 
-    // Check for cURL errors
-    if (curl_errno($ch)) {
-        $error_msg = curl_error($ch);
-        curl_close($ch);
-        echo "<script>console.log('cURL error: $error_msg');</script>";
-        throw new Exception("cURL error: $error_msg");
-    }
-
-    // Close the cURL session
-    curl_close($ch);
-
-    // Decode the response
-    $result = json_decode($response);
     echo "status" . $httpCode;
     // Check if the response is valid
     if ($httpCode === 401 || $httpCode === 422){ //check why exam server return 422
-        echo "login with api key";
-        $res = get_auth_token($data);
-        if($res === false){
-            throw new Exception("Cant authenticate to exam server");
-        }
-        return local_aiquestions_get_questions($data,$res->access_token);
+        return local_aiquestions_get_questions($data,$tries-1);
     }
-    if ($httpCode !== 200 || $result === null) {
+    elseif ($httpCode !== 200 || $response === null) {
         echo "<script>console.log('Invalid response received from exam server: $response');</script>";
         throw new Exception("Invalid response received from exam server");
     }
 
     $questions = new stdClass(); // The questions object.
-    if (isset($result->gift)) { // TODO: return from exam server 
-        $questions->text = $result->gift;
-        $questions->prompt = $story;
+    print_r($response);
+    if (isset($response->gift)) { // TODO: return from exam server 
+        $questions->text = $response->gift;
     } else {
-        $questions = $result;
-        $questions->prompt = $story;
+        $questions = $response;
     }
     return $questions;
 }
@@ -197,7 +285,8 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     require_once($CFG->dirroot . '/question/format.php');
     require_once($CFG->dirroot . '/question/format/gift/format.php');
 
-    $qtypeMap = array("multiple_choice"=>"multichoice","fill_in_the_blank"=>"match","open_questions"=>"essay");
+    // currently fill in the blank is multichoice instead gapselect
+    $qtypeMap = array("multiple_choice"=>"multichoice","fill_in_the_blank"=>"multichoice","open_questions"=>"essay");
 
     $qformat = new \qformat_gift();
     $coursecontext = \context_course::instance($courseid);
@@ -231,12 +320,12 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     $createdquestions = []; // Array of objects of created questions.
     foreach ($questions as $question) {
         $questionSections = explode("\n", $question);
-        echo "obj".$questionSections[0]." ". str_replace("//","",$questionSections[0]). " ". trim(str_replace("//","",$questionSections[0]));
         $qtype = $qtypeMap[trim(str_replace("//","",$questionSections[0]))];
         if (empty($qtype)) {
             echo "fail finding qtype\n";
             return false;
         }
+    
         echo "qtype".$qtype."\n\n";
             
         $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[1]));
@@ -254,9 +343,59 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
         $q->modifiedby = $userid;
         $q->timecreated = time();
         $q->timemodified = time();
+        $q->qtype = $qtype;
         $q->questiontext = ['text' => "<p>" . $questiontext . "</p>"];
         $q->questiontextformat = 1;
 
+        if ($qtype == "e") {
+            $q->questiontext = ['text' => "<p>" . $questionSections[2] . "</p>"];
+            // $q->correctanswer = $questionSections[3];
+            if (preg_match('/{=([^~]+)~([^}]*)}/', $questionSections[2], $matches)) {
+                $q->questiontext = ['text' => "<p>" . str_replace($matches[0], '[[2]]', $questionSections[2]) . "</p>"];
+                // $options = explode('~', trim($matches[2]));
+                // $i = 1;
+                // foreach ($options as $key=>$option){
+                //     $q->choices[] = array(
+                //         'answer' => array('[', $option, $i, ']'),
+                //         'choicegroup' => array('[', 'group', 0, ']'),
+                //     );
+                //     $i++;
+                // }
+                // $q->choices[] = array(
+                //     'answer' => array('[', $matches[1], 4, ']'),
+                //     'choicegroup' => array('[', 'group', 0, ']'),
+                // );
+
+                
+                // Create choice for the correct answer
+                $correctAnswer = trim($matches[1]);
+                $choice = new qtype_gapselect_choice();
+                $choice->id = 1; // Example ID, this should be unique
+                $choice->text = $correctAnswer;
+                $choice->fraction = 1.0;
+                $q->choices[] = $choice;
+
+                // Create choices for incorrect answers
+                $incorrectAnswers = explode('~', trim($matches[2]));
+                foreach ($incorrectAnswers as $answer) {
+                    $choice = new qtype_gapselect_choice();
+                    $choice->id = count($question->choices) + 1;
+                    $choice->text = trim($answer);
+                    $choice->fraction = 0.0;
+                    $q->choices[] = $choice;
+
+                echo "\n\nthis is quesion:\n\n";
+                print_r(explode('~', trim($matches[2])));
+                print_r($q);
+                echo "\n\n";
+
+            }
+        }
+    }
+
+        echo "Question Title: " . $q->name . "\n";
+        echo "Question Type: " . $q->qtype . "\n";
+        
         // Set default values for essay question type fields
         if ($qtype == 'essay') {
             $q->responseformat = 'editor';

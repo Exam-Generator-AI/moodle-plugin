@@ -65,31 +65,79 @@ if ($mform->is_cancelled()) {
         // $example = 'example' . $preset;
 
             // Process the form data
-    $textinput = '';
+    // $textinput = '';
     // Check if a file was uploaded and extract its content if present
-    if (isset($_FILES['uploadedfile']) && $_FILES['uploadedfile']['error'] == 0) {
-        $uploadedFile = $_FILES['uploadedfile'];
-        print_r($uploadedFile);
-        $fileExt = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
-        echo $fileExt;
-        if ($fileExt == 'pdf') {
-            // Handle PDF extraction
-            require_once('pdfparser.php'); // Assuming you have a custom PDF parser or library
-            $textinput = extract_text_from_pdf($uploadedFile['tmp_name']);
-        } elseif ($fileExt == 'pptx') {
-            // Handle PPTX extraction
-            require_once('pptxparser.php'); // Assuming you have a custom PPTX parser or library
-            $textinput = extract_text_from_pptx($uploadedFile['tmp_name']);
-        }
-    } else {
-        // Use the text input provided directly
-        $textinput = $data->textinput;
-    }
+    // if (isset($_FILES['uploadedfile']) && $_FILES['uploadedfile']['error'] == 0) {
+    //     $uploadedFile = $_FILES['uploadedfile'];
+    //     print_r($uploadedFile);
+    //     $fileExt = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
+    //     echo $fileExt;
+    //     if ($fileExt == 'pdf') {
+    //         // Handle PDF extraction
+    //         require_once('pdfparser.php'); // Assuming you have a custom PDF parser or library
+    //         $textinput = extract_text_from_pdf($uploadedFile['tmp_name']);
+    //     } elseif ($fileExt == 'pptx') {
+    //         // Handle PPTX extraction
+    //         require_once('pptxparser.php'); // Assuming you have a custom PPTX parser or library
+    //         $textinput = extract_text_from_pptx($uploadedFile['tmp_name']);
+    //     }
+    // } else {
+    //     // Use the text input provided directly
+    //     $textinput = $data->textinput;
+    // }
             // Handle file upload and extract text content
         //$extractedText = $mform->handle_file_upload($data, $_FILES);
         //if (!empty($extractedText)) {
         //    $data->textinput = $extractedText;
         //}
+        print("text1 " . $data->textinput."\n");        
+        $text=$data->textinput;
+        if ($data->field == "file") {
+            # code...
+            echo "file processing\n";
+            if ($draftitemid = file_get_submitted_draft_itemid('userfile')) {
+                // Prepare file storage
+                $context = context_system::instance();
+                $fs = get_file_storage();
+        
+                // Debug: Check draft area files before saving
+                $draft_files = $fs->get_area_files($context->id, 'user', 'draft', $draftitemid, 'id', false);
+                echo "Draft Files Count: " . count($draft_files) . "\n";
+                foreach ($draft_files as $draft_file) {
+                    echo "Draft File: " . $draft_file->get_filename() . "\n";
+                }
+        
+                // Save the file permanently from the draft area
+                file_save_draft_area_files($draftitemid, $context->id, 'user', 'private', 0, array('subdirs' => 0, 'maxbytes' => 0, 'areamaxbytes' => 10485760, 'maxfiles' => 50));
+        
+                // Retrieve the files from the permanent area
+                $files = $fs->get_area_files($context->id, 'user', 'private', 0, 'id', false);
+        
+                // Debug: Check permanent area files after saving
+                echo "Permanent Files Count: " . count($files) . "\n";
+                if (count($files) > 0) {
+                    foreach ($files as $file) {
+                        $filename = $file->get_filename();
+                        $filepath = $file->get_filepath();
+                        $filecontent = $file->get_content();
+                        $mimeType = $file->get_mimetype();
+        
+                        // Now you have the content of the file, you can process it as needed
+                        echo "Filename: $filename\n";
+                        echo "Filepath: $filepath\n";
+
+
+                        // echo "Filecontent: $filecontent\n";
+                        $fileDetails =  (object)  ['content' => $filecontent ,'path' => $filepath,  'name' => $filename , 'mimeType' => $mimeType] ;
+                    }
+                } else {
+                    echo "No files found in the permanent area.";
+                }
+            } else {
+                echo "No draft item ID found.";
+            }
+        }
+        // return
         $data = (object) [
             'category' => $data->category,
             'numofopenquestions' => $data->numofopenquestions,
@@ -103,7 +151,8 @@ if ($mform->is_cancelled()) {
             'field' => $data->field,
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
-            'textinput' =>  $data->textinput,
+            'textinput' =>  $text,
+            'fileDetails' => $fileDetails
         ];
         $task->execute($data);
         if (isset($questions->text)) {
