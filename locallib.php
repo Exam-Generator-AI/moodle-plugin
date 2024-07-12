@@ -159,14 +159,14 @@ function send_exam( $data,$access_token='' ){
     $url = 'http://host.docker.internal:5000/api/v1/gen/exam/sync'; // Change this to sync routex
     $authorization = "Authorization: Bearer " . $access_token;
 
-    $levelQuestions = $data->questionLevel;
+    $difficulty = $data->difficulty;
     $text = $data->textinput;
     // $examTags = $data->skills;//TODO: fix skills to send Ids
     $examTags = [];
     $numofopenquestions = $data->numofopenquestions;
     $numsofblankquestions = $data->numsofblankquestions;
     $multipleQuestions = $data->numofmultiplechoicequestions;
-    $examLanguage = $data->examLanguage;
+    $language = $data->language;
     $field = $data->field;
     $examFocus = $data->examFocus;
     $example = "";
@@ -178,9 +178,9 @@ function send_exam( $data,$access_token='' ){
         return (object)['response'=>'{}' , 'httpCode'=>401];
     }
     $exam_data = '{
-        "text": "'. $text .'", "field": "'. $field .'","examTags": [],"exampleQuestion": "'.$example.'",
-        "examFocus": "'. $examFocus .'","examLanguage": "'. $examLanguage .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
-        "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'","fill_in_the_blank": '. $numsofblankquestions. '},"levelQuestions": "'. $levelQuestions .'"
+        "text": "'. $text .'", "field": "'. $field .'","skills": [],"exampleQuestion": "'.$example.'",
+        "focus": "'. $examFocus .'","language": "'. $language .'","payload": {},"isClosedContent": "'.$isClosedContent.'",
+        "questions": {"multiple_choice": "'. $multipleQuestions .'","open_questions": "'. $numofopenquestions .'","fill_in_the_blank": '. $numsofblankquestions. '},"difficulty": "'. $difficulty .'"
     }';
 
     // Initialize cURL
@@ -259,8 +259,9 @@ function local_aiquestions_get_questions($data,$tries = 3) {
 
     $questions = new stdClass(); // The questions object.
     print_r($response);
-    if (isset($response->gift)) { // TODO: return from exam server 
-        $questions->text = $response->gift;
+    if (isset($response->exam)) { // TODO: return from exam server 
+        echo "\nexam exists!!\n";
+        $questions->text = $response->exam;
     } else {
         $questions = $response;
     }

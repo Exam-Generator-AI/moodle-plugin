@@ -184,7 +184,7 @@ class local_aiquestions_story_form extends moodleform
         $languages = ['English' => "English", 'Hebrew' => "Hebrew", 'Hindi' => "Hindi", 'Spanish' => 'Spanish', 'German' => "German", 'French' => "French", 'Russian' => "Russian", 'Arabic' => "Arabic"];
         $mform->addElement(
             'select',
-            'examLanguage',
+            'language',
             'Questions language',
             $languages
         );
@@ -268,7 +268,7 @@ class local_aiquestions_story_form extends moodleform
         // Question level.
         $mform->addElement(
             'select',
-            'questionLevel',
+            'difficulty',
             'Questions Level',
             ["Academic" => "Academic"]
         );
