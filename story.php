@@ -92,6 +92,7 @@ if ($mform->is_cancelled()) {
         //}
         print("text1 " . $data->textinput."\n");        
         $text=$data->textinput;
+        $fileDetails = (object)[]; 
         if ($data->field == "file") {
             # code...
             echo "file processing\n";
@@ -154,7 +155,14 @@ if ($mform->is_cancelled()) {
             'textinput' =>  $text,
             'fileDetails' => $fileDetails
         ];
-        $task->execute($data);
+        $task->set_custom_data($data);
+        // $task->execute($data);
+        // $task->set_attempts_available(3);
+        \core\task\manager::queue_adhoc_task($task);
+            // Check if the cron is overdue.
+        $lastcron = get_config('tool_task', 'lastcronstart');
+        $cronoverdue = ($lastcron < time() - 3600 * 24);
+
         if (isset($questions->text)) {
             // if ($created) {
             //     echo "[local_aiquestions] Successfully created questions!";

@@ -33,20 +33,21 @@ defined('MOODLE_INTERNAL') || die();
  * @package     local_aiquestions
  * @category    admin
  */
-class questions 
+class questions extends \core\task\adhoc_task
 {
     /**
      * Execute the task.
      *
      * @return void
      */
-    public function execute($data)
+    public function execute()
     {
         global $DB, $CFG, $_FILES, $_USER;
         require_once(__DIR__ . '/../../locallib.php');
         // Read numoftries from settings.
         $numoftries = get_config('local_aiquestions', 'numoftries');
 
+        $data = $this->get_custom_data();
         // Get the data from the task.
         //$data = $this->get_custom_data();
         $courseid = $data->courseid;
@@ -104,7 +105,7 @@ class questions
             // if (isset($questions->error->message)) {
             //     $error .= $questions->error->message;
 
-            //     // Print error message to cron/adhoc output.
+                // Print error message to cron/adhoc output.
             //     echo "[local_aiquestions] Error : $error.\n";
             // }
             // Check gift format.
