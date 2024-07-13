@@ -35,6 +35,13 @@ defined('MOODLE_INTERNAL') || die();
  */
 class questions extends \core\task\adhoc_task
 {
+
+    public static function instance($data): self {
+        $task = new self();
+        $task->set_custom_data($data);
+
+        return $task;
+    }
     /**
      * Execute the task.
      *
@@ -49,7 +56,6 @@ class questions extends \core\task\adhoc_task
 
         $data = $this->get_custom_data();
         // Get the data from the task.
-        //$data = $this->get_custom_data();
         $courseid = $data->courseid;
         $category = $data->category;
         $userid = $data->userid;

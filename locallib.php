@@ -90,20 +90,48 @@ function get_auth_token($data) {
 
     }
 
+function read_stored_file($fileName){
+            // Retrieve the files from the permanent area
+            $context = context_system::instance();
+            $fs = get_file_storage();
+            $files = $fs->get_area_files($context->id, 'user', 'private', 0, 'id', false);
 
+            // Debug: Check permanent area files after saving
+            echo "Permanent Files Count: " . count($files) . "\n";
+            if (count($files) > 0) {
+                foreach ($files as $file) {
+                    if (isset($file)) {
+                        if ($file->get_filename()==$fileName) {
+                            return $file;
+                        }
+                    }
+                }
+            } else {
+                echo "No files found in the permanent area.";
+                return null;
+            }
+} 
 function read_file($fileData,$access_token){
-    print("send file to exam". $fileData->name ."\n");
-    print("path ". $fileData->path . $fileData->name."\n");
-
+    
     $url = 'http://host.docker.internal:5000/api/v1/exports'; // Change this to sync routex
     $authorization = "Authorization: Bearer " . $access_token;
+    
+    $file = read_stored_file($fileData->name);
+    print("send file to exam". $filename ."\n");
+    if (empty($file)) {
+        throw new Exception("Invalid file request, file not found");
+    }
+    $filename = $file->get_filename();
+    $filepath = $file->get_filepath();
+    $filecontent = $file->get_content();
+    $mimeType = $file->get_mimetype();
 
     if (empty($access_token)) {
         # code...
         return (object)['response'=>'{}' , 'httpCode'=>401];
     }
-    echo "mime type - $fileData->mimeType \n\n";
-    if ($fileData->mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+    echo "mime type - $mimeType \n\n";
+    if ($mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
         echo "pptx file \n\n";
        $url = $url."/pptx/read";
        $field="pptFile";
@@ -116,10 +144,10 @@ function read_file($fileData,$access_token){
     // Create a temporary file
     $tempDir = make_temp_directory('mytempfiles');
     $tempFilePath = tempnam($tempDir, 'tempfile_');
-    file_put_contents($tempFilePath, $fileData->content);
+    file_put_contents($tempFilePath, $filecontent);
 
     if (function_exists('curl_file_create')) { // php 5.5+
-        $cFile = curl_file_create($tempFilePath, $fileData->mimeType, $fileData->name);
+        $cFile = curl_file_create($tempFilePath, $mimeType, $filename);
       } else { // 
         $cFile = '@' . realpath($tempFilePath);
       }

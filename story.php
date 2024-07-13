@@ -61,38 +61,11 @@ if ($mform->is_cancelled()) {
     $task = new \local_aiquestions\task\questions();
     if ($task) {
         $uniqid = uniqid($USER->id, true);
-        // $instructions = 'instructions' . $preset;
-        // $example = 'example' . $preset;
+        print($uniqid);
 
-            // Process the form data
-    // $textinput = '';
-    // Check if a file was uploaded and extract its content if present
-    // if (isset($_FILES['uploadedfile']) && $_FILES['uploadedfile']['error'] == 0) {
-    //     $uploadedFile = $_FILES['uploadedfile'];
-    //     print_r($uploadedFile);
-    //     $fileExt = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
-    //     echo $fileExt;
-    //     if ($fileExt == 'pdf') {
-    //         // Handle PDF extraction
-    //         require_once('pdfparser.php'); // Assuming you have a custom PDF parser or library
-    //         $textinput = extract_text_from_pdf($uploadedFile['tmp_name']);
-    //     } elseif ($fileExt == 'pptx') {
-    //         // Handle PPTX extraction
-    //         require_once('pptxparser.php'); // Assuming you have a custom PPTX parser or library
-    //         $textinput = extract_text_from_pptx($uploadedFile['tmp_name']);
-    //     }
-    // } else {
-    //     // Use the text input provided directly
-    //     $textinput = $data->textinput;
-    // }
-            // Handle file upload and extract text content
-        //$extractedText = $mform->handle_file_upload($data, $_FILES);
-        //if (!empty($extractedText)) {
-        //    $data->textinput = $extractedText;
-        //}
         print("text1 " . $data->textinput."\n");        
         $text=$data->textinput;
-        $fileDetails = (object)[]; 
+        $fileDetails = null; 
         if ($data->field == "file") {
             # code...
             echo "file processing\n";
@@ -118,18 +91,18 @@ if ($mform->is_cancelled()) {
                 echo "Permanent Files Count: " . count($files) . "\n";
                 if (count($files) > 0) {
                     foreach ($files as $file) {
-                        $filename = $file->get_filename();
-                        $filepath = $file->get_filepath();
-                        $filecontent = $file->get_content();
-                        $mimeType = $file->get_mimetype();
-        
-                        // Now you have the content of the file, you can process it as needed
-                        echo "Filename: $filename\n";
-                        echo "Filepath: $filepath\n";
-
-
+                        if (isset($file)) {
+                            echo "inn file object";
+                            $fileDetails = array('name' => $file->get_filename() , 'mimeType' => $file->get_mimetype()) ;
+                            break;
+                        }
                         // echo "Filecontent: $filecontent\n";
-                        $fileDetails =  (object)  ['content' => $filecontent ,'path' => $filepath,  'name' => $filename , 'mimeType' => $mimeType] ;
+                        // $fileDetails->content = $filecontent;
+                        // $fileDetails->name = $filename;
+                        // $fileDetails->mimeType = $mimeType;
+                        // $fileDetails->path = $filepath;
+
+
                     }
                 } else {
                     echo "No files found in the permanent area.";
@@ -139,7 +112,7 @@ if ($mform->is_cancelled()) {
             }
         }
         // return
-        $data = (object) [
+        $examData = (object) [
             'category' => $data->category,
             'numofopenquestions' => $data->numofopenquestions,
             'numofmultiplechoicequestions' => $data->numofmultiplechoicequestions,
@@ -153,25 +126,17 @@ if ($mform->is_cancelled()) {
             'examFocus' => $data->examFocus,
             'skills' => $data->skills,
             'textinput' =>  $text,
-            'fileDetails' => $fileDetails
+            'fileDetails'=>$fileDetails
+
+            // 'fileDetails' => $fileDetails
         ];
-        $task->set_custom_data($data);
+        $task = \local_aiquestions\task\questions::instance($examData);
         // $task->execute($data);
         // $task->set_attempts_available(3);
         \core\task\manager::queue_adhoc_task($task);
             // Check if the cron is overdue.
         $lastcron = get_config('tool_task', 'lastcronstart');
         $cronoverdue = ($lastcron < time() - 3600 * 24);
-
-        if (isset($questions->text)) {
-            // if ($created) {
-            //     echo "[local_aiquestions] Successfully created questions!";
-            // } else {
-            //     echo "[local_aiquestions] Error: Failed to create questions.";
-            // }
-        } else {
-            echo "[local_aiquestions] Error: No question text returned from API.";
-        }
 
     } else {
         echo get_string('taskerror', 'local_aiquestions');
@@ -182,37 +147,12 @@ if ($mform->is_cancelled()) {
         'wwwroot' => $CFG->wwwroot,
         'uniqid' => $uniqid,
         'userid' => $USER->id,
+        'cron' => $cronoverdue
     ];
     echo $OUTPUT->render_from_template('local_aiquestions/loading', $datafortemplate);
 } else {
     $mform->display();
 }
 
-function make_authenticated_request($endpoint, $data) {
-    global $SESSION;
-
-    if (empty($SESSION->jwttoken)) {
-        throw new moodle_exception('nojwttoken', 'local_aiquestions');
-    }
-
-    $api_url = 'https://api.example.com' . $endpoint; // Replace with your API base URL
-    $options = array(
-        'http' => array(
-            'header'  => "Authorization: Bearer " . $SESSION->jwttoken . "\r\n" .
-                         "Content-type: application/json\r\n",
-            'method'  => 'POST',
-            'content' => json_encode($data),
-        ),
-    );
-    
-    $context  = stream_context_create($options);
-    $result = file_get_contents($api_url, false, $context);
-    
-    if ($result === FALSE) {
-        throw new moodle_exception('apirequestfailed', 'local_aiquestions');
-    }
-    
-    return json_decode($result, true);
-}
 echo $OUTPUT->footer();
 ?>

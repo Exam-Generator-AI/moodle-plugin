@@ -215,7 +215,7 @@ class local_aiquestions_story_form extends moodleform
             null,
             [
                 'maxbytes' => 10000000,
-                'accepted_types' => '*',
+                'accepted_types' => 'pdf,ppt,pptx',
             ]
         );
         $mform->setType('userfile', PARAM_FILE);
