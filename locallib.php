@@ -111,16 +111,12 @@ function read_stored_file($fileName){
                 return null;
             }
 } 
-function read_file($fileData,$access_token){
+function read_file($file,$access_token){
     
     $url = 'http://host.docker.internal:5000/api/v1/exports'; // Change this to sync routex
     $authorization = "Authorization: Bearer " . $access_token;
     
-    $file = read_stored_file($fileData->name);
-    print("send file to exam". $filename ."\n");
-    if (empty($file)) {
-        throw new Exception("Invalid file request, file not found");
-    }
+
     $filename = $file->get_filename();
     $filepath = $file->get_filepath();
     $filecontent = $file->get_content();
@@ -255,14 +251,19 @@ function local_aiquestions_get_questions($data,$tries = 3) {
             # code...
             throw new Exception("Cant authenticate to exam server");
         }
-        local_aiquestions_get_questions($data,$tries-1);
+        return local_aiquestions_get_questions($data,$tries-1);
     }
     if ($data->field == 'file' && isset($data->fileDetails)) {
-        $res= read_file($data->fileDetails,$retrieved_token);
+        $file = read_stored_file($data->fileDetails->name);
+        if (empty($file)) {
+            throw new Exception("Invalid file request, file not found");
+        }
+        $res= read_file($file,$retrieved_token);
         if ($res->httpCode == 200) {
             # code...
             $data->textinput = $res->response;
             $res = send_exam($data,$retrieved_token);
+            $file->delete();
         }
     } else {
         $res = send_exam($data,$retrieved_token);
