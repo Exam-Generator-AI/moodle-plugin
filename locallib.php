@@ -38,32 +38,30 @@
  */
 
  require_once(__DIR__ . '/../../config.php');
- print("libdir-".$CFG->libdir);
 // Directly include the filelib.php file
  require_once(__DIR__ . '/../../lib/filelib.php');
 
 
-function get_auth_token($data) {
+function get_auth_token() {
     global $USER, $SESSION;
     require_login();
 
     $key = get_config('local_aiquestions', 'key'); // TODO: Change this to the actual key
-    echo "key: ". $key;
     $url = 'http://host.docker.internal:5000/api/v1/auth/external'; // Change this to sync route
     $authorization = "X-API-KEY:" . $key;
 
-    $data = '{
+    $postData = '{
         "email": "'. $USER->email .'"
     }';
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', $authorization]);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
 
-
+    echo "Send To exam";
     // Execute the request and wait for the response
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -74,7 +72,6 @@ function get_auth_token($data) {
     // Decode the response
     $result = json_decode($response);
 
-    echo "result from exam" . $httpCode;
 
     // Check if the response is valid
     if ($httpCode !== 200) {
@@ -97,7 +94,6 @@ function read_stored_file($fileName){
             $files = $fs->get_area_files($context->id, 'user', 'private', 0, 'id', false);
 
             // Debug: Check permanent area files after saving
-            echo "Permanent Files Count: " . count($files) . "\n";
             if (count($files) > 0) {
                 foreach ($files as $file) {
                     if (isset($file)) {
@@ -107,7 +103,6 @@ function read_stored_file($fileName){
                     }
                 }
             } else {
-                echo "No files found in the permanent area.";
                 return null;
             }
 } 
@@ -126,13 +121,10 @@ function read_file($file,$access_token){
         # code...
         return (object)['response'=>'{}' , 'httpCode'=>401];
     }
-    echo "mime type - $mimeType \n\n";
     if ($mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-        echo "pptx file \n\n";
        $url = $url."/pptx/read";
        $field="pptFile";
     } else {
-       echo "pdf file \n\n";
        $url = $url."/pdf/read";
        $field="pdfFile";
     }
@@ -166,7 +158,6 @@ function read_file($file,$access_token){
     // Clean up the temporary file
     if (file_exists($tempFilePath)) {
         unlink($tempFilePath);
-        echo "Temporary file deleted: $tempFilePath\n";
     }
     // Check for cURL errors
     if (curl_errno($ch)) {
@@ -216,10 +207,6 @@ function send_exam( $data,$access_token='' ){
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2000);
 
-
-    // Print message before sending the request
-    mtrace("Sending request to exam server...");
-
     // Check for cURL errors
     if (curl_errno($ch)) {
         $error_msg = curl_error($ch);
@@ -230,7 +217,6 @@ function send_exam( $data,$access_token='' ){
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-    echo $httpCode;
     curl_close($ch);
 
     return (object)['response'=>json_decode($response) , 'httpCode'=>$httpCode];
@@ -272,11 +258,6 @@ function local_aiquestions_get_questions($data,$tries = 3) {
     $httpCode = $res->httpCode;
     $response = $res->response;
 
-
-    // Print message after receiving the response
-    mtrace("<script>console.log('Received response from exam server.');</script>");
-
-    echo "status" . $httpCode;
     // Check if the response is valid
     if ($httpCode === 401 || $httpCode === 422){ //check why exam server return 422
         return local_aiquestions_get_questions($data,$tries-1);
@@ -287,9 +268,7 @@ function local_aiquestions_get_questions($data,$tries = 3) {
     }
 
     $questions = new stdClass(); // The questions object.
-    print_r($response);
     if (isset($response->exam)) { // TODO: return from exam server 
-        echo "\nexam exists!!\n";
         $questions->text = $response->exam;
     } else {
         $questions = $response;
@@ -341,7 +320,6 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
     // Then loop through each question and create it.
     $questions = explode("\n\n", $gift);
 
-    echo "question number from exam- ". count($questions)."num of question". $numofquestions;
     
 
     // if (count($questions) != $numofquestions) {
@@ -355,13 +333,8 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
             echo "fail finding qtype\n";
             return false;
         }
-    
-        echo "qtype".$qtype."\n\n";
-            
-        $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[1]));
-
-        print_r($USER);
-        
+                
+        $questiontext = trim(preg_replace('/^.*::/', '', $questionSections[1]));        
         $q = $qformat->readquestion($questionSections);    
         // Check if question is valid.
         if (!$q) {
@@ -414,17 +387,10 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
                     $choice->fraction = 0.0;
                     $q->choices[] = $choice;
 
-                echo "\n\nthis is quesion:\n\n";
-                print_r(explode('~', trim($matches[2])));
-                print_r($q);
-                echo "\n\n";
 
             }
         }
     }
-
-        echo "Question Title: " . $q->name . "\n";
-        echo "Question Type: " . $q->qtype . "\n";
         
         // Set default values for essay question type fields
         if ($qtype == 'essay') {
@@ -443,13 +409,9 @@ function local_aiquestions_create_questions($courseid, $category, $gift, $numofq
 
 
         $created = question_bank::get_qtype($qtype)->save_question($q, $q);
-        echo "created obj\n";
         $createdquestions[] = $created;
     }
-    echo "done create\n";
-    print_r($createdquestions);
     if (count($createdquestions) > 0) {
-        echo "success\n";
         return $createdquestions;
     } else {
         echo "fail to create questions\n";

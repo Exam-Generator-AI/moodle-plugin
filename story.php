@@ -57,29 +57,16 @@ $mform = new local_aiquestions_story_form();
 if ($mform->is_cancelled()) {
     redirect($CFG->wwwroot . '/course/view.php?id=' . $courseid);
 } else if ($data = $mform->get_data()) {
-    echo "data: " . $data->category . "<br>";
     $task = new \local_aiquestions\task\questions();
     if ($task) {
-        $uniqid = uniqid($USER->id, true);
-        print($uniqid);
-
-        print("text1 " . $data->textinput."\n");        
+        $uniqid = uniqid($USER->id, true);       
         $text=$data->textinput;
         $fileDetails = null; 
         if ($data->field == "file") {
-            # code...
-            echo "file processing\n";
             if ($draftitemid = file_get_submitted_draft_itemid('userfile')) {
                 // Prepare file storage
                 $context = context_system::instance();
                 $fs = get_file_storage();
-        
-                // Debug: Check draft area files before saving
-                $draft_files = $fs->get_area_files($context->id, 'user', 'draft', $draftitemid, 'id', false);
-                echo "Draft Files Count: " . count($draft_files) . "\n";
-                foreach ($draft_files as $draft_file) {
-                    echo "Draft File: " . $draft_file->get_filename() . "\n";
-                }
         
                 // Save the file permanently from the draft area
                 file_save_draft_area_files($draftitemid, $context->id, 'user', 'private', 0, array('subdirs' => 0, 'maxbytes' => 0, 'areamaxbytes' => 10485760, 'maxfiles' => 50));
@@ -88,11 +75,9 @@ if ($mform->is_cancelled()) {
                 $files = $fs->get_area_files($context->id, 'user', 'private', 0, 'id', false);
         
                 // Debug: Check permanent area files after saving
-                echo "Permanent Files Count: " . count($files) . "\n";
                 if (count($files) > 0) {
                     foreach ($files as $file) {
                         if (isset($file)) {
-                            echo "inn file object";
                             $fileDetails = array('name' => $file->get_filename() , 'mimeType' => $file->get_mimetype()) ;
                             break;
                         }
@@ -131,9 +116,9 @@ if ($mform->is_cancelled()) {
             // 'fileDetails' => $fileDetails
         ];
         $task = \local_aiquestions\task\questions::instance($examData);
-        // $task->execute($data);
+        $task->execute($data);
         // $task->set_attempts_available(3);
-        \core\task\manager::queue_adhoc_task($task);
+        // \core\task\manager::queue_adhoc_task($task);
             // Check if the cron is overdue.
         $lastcron = get_config('tool_task', 'lastcronstart');
         $cronoverdue = ($lastcron < time() - 3600 * 24);

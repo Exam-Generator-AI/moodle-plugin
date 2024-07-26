@@ -61,11 +61,11 @@ class questions extends \core\task\adhoc_task
         $userid = $data->userid;
         $uniqid = $data->uniqid;
         //exam section
-        $numofquestions = $data->numofopenquestions;
-        $text = $data->text;
+        $numofquestions = $data->numofmultiplechoicequestions;
+        $text = $data->textinput;
         $skills = $data->skills;
-        $questionLevel = $data->questionLevel;
-        $examLanguage = $data->examLanguage;
+        $questionLevel = $data->difficulty;
+        $examLanguage = $data->language;
         $field = $data->field;
         $examFocus = $data->examFocus;
 
@@ -91,9 +91,7 @@ class questions extends \core\task\adhoc_task
         $update = new \stdClass();
 
         $api_key = get_config('local_aiquestions', 'key');
-        echo "api_key:" . $api_key;
-        echo "[local_aiquestions] Creating Questions via OpenAI...\n";
-        echo "[local_aiquestions] Try $i of $numoftries...\n";
+        echo "[local_aiquestions] Creating Questions via StudyWise...\n";
 
         while (!$created && $i <= 1) {
 
@@ -103,23 +101,16 @@ class questions extends \core\task\adhoc_task
             $update->datemodified = time();
             $DB->update_record('local_aiquestions', $update);
 
-            echo "starting to get questions from OpenAI...\n";
-            // Get questions from ChatGPT API.
+            echo "create exam from StudyWise...\n";
             $questions = \local_aiquestions_get_questions($data);
-            echo "[local_aiquestions] Questions received from OpenAI...\n";
-            // Print error message of ChatGPT API (if there are).
-            // if (isset($questions->error->message)) {
-            //     $error .= $questions->error->message;
+            echo "[local_aiquestions] Questions received from StudyWise...\n";
 
-                // Print error message to cron/adhoc output.
-            //     echo "[local_aiquestions] Error : $error.\n";
-            // }
             // Check gift format.
             if (property_exists($questions, 'text')) {
                 // if (\local_aiquestions_check_gift($questions->text)) {
 
                     // Create the questions, return an array of objetcs of the created questions.
-                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->multipleQuestions + $data->numsofblankquestions, $userid);
+                    $created = \local_aiquestions_create_questions($courseid, $category, $questions->text, $data->numofmultiplechoicequestions + $data->numofmultiplechoicequestions + $data->numsofblankquestions, $userid);
                     if ($created === false){ 
                          echo "something went wrong cannot create all questions";
                     } else { //all questions inserted to the question bank

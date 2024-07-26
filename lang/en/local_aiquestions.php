@@ -26,11 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Basics.
-$string['pluginname'] = 'Exam Generator';
+$string['pluginname'] = 'Study Wise';
 $string['pluginname_desc'] = 'This plugin allows you to automatically generate questions from a text using a language AI (eg chatGPT).';
 $string['pluginname_help'] = 'Use this plugin from the course administration menu or the question bank.';
 $string['privacy:metadata'] = 'AI text to questions generator does not store any personal data.';
-$string['aiquestions'] = 'Exam Generator';
+$string['aiquestions'] = 'Study Wise';
 
 // Settings page.
 $string['openaikey'] = 'StudyWise API key';
@@ -74,7 +74,7 @@ $string['gotoquestionbank'] = 'Go to question bank';
 $string['generatemore'] = 'Generate more questions';
 $string['createdquestionwithid'] = 'Created question with id ';
 $string['tasksuccess'] = 'The question generation task was successfully created';
-$string['generating'] = 'Generating your questions... (You can safely leave this page, and check later on the question bank)';
+$string['generating'] = 'Generating your exam...';
 $string['generationfailed'] = 'The question generation failed after {$a} tries';
 $string['generationtries'] = 'Number of tries sent to OpenAI: <b>{$a}</b>';
 $string['outof'] = 'out of';
